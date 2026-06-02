@@ -84,27 +84,24 @@ public class DashboardController : Controller
     [HttpGet]
     public IActionResult GetTicketsByStatus(string status)
     {
-        var tickets = _context.OrdenesServicios
-            .Select(o => new
-            {
-                IdOrden = o.id_orden,
-                Cliente = o.nombre_cliente,
-                Nomenclatura = o.nomenclatura,
-                Descripcion = o.descripcion,
-                Estatus = _context.DetalleOrdenServicios
-                    .Where(d => d.id_orden == o.id_orden)
-                    .OrderByDescending(d => d.id_detalle)
-                    .Select(d => d.estatus)
-                    .FirstOrDefault() ?? "nuevo",
-                Comentarios = _context.DetalleOrdenServicios
-                    .Where(d => d.id_orden == o.id_orden)
-                    .OrderByDescending(d => d.id_detalle)
-                    .Select(d => d.comentarios)
-                    .FirstOrDefault() ?? ""
-            })
-            .Where(x => x.Estatus == status)
-            .ToList();
+        var query = from o in _context.OrdenesServicios
+                    let lastDetail = _context.DetalleOrdenServicios
+                        .Where(d => d.id_orden == o.id_orden)
+                        .OrderByDescending(d => d.id_detalle)
+                        .FirstOrDefault()
+                    let currentStatus = lastDetail != null ? lastDetail.estatus : "nuevo"
+                    where currentStatus == status
+                    select new
+                    {
+                        IdOrden = o.id_orden,
+                        Cliente = o.nombre_cliente,
+                        Nomenclatura = o.nomenclatura,
+                        Descripcion = o.descripcion,
+                        Estatus = currentStatus,
+                        Comentarios = lastDetail != null ? lastDetail.comentarios : "",
+                        AsignadoA = lastDetail != null ? lastDetail.asignado_a : null
+                    };
 
-        return Json(tickets);
+        return Json(query.ToList());
     }
 }

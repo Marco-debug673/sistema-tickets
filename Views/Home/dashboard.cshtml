@@ -89,6 +89,7 @@
                                     <th>Cliente</th>
                                     <th>Nomenclatura</th>
                                     <th>Descripción</th>
+                                    <th>Atendido por</th>
                                     <th id="commentsHeader">Solución</th>
                                 </tr>
                             </thead>
@@ -101,6 +102,8 @@
     </div>
 
     <script>
+        let activeStatusInModal = null; // Seguimiento del estatus mostrado en el modal
+
         function initChart(id, val, total, color) {
             const ctx = document.getElementById('chart-' + id)?.getContext('2d');
             const rest = Math.max(0, total - val);
@@ -149,15 +152,21 @@
             const titleSpan = document.getElementById('modalStatusTitle');
             const tableBody = document.getElementById('ticketsListBody');
             const commentsHeader = document.getElementById('commentsHeader');
+
+            activeStatusInModal = status; // Marcar qué estatus estamos viendo
             
             const isCerrado = (status === 'cerrado');
-            const colCount = isCerrado ? 5 : 4;
+            const colCount = isCerrado ? 6 : 5;
 
             if (isCerrado) {
                 commentsHeader.classList.remove('d-none');
             } else {
                 commentsHeader.classList.add('d-none');
             }
+
+            // Limpiar el estatus activo al cerrar el modal
+            const modalEl = document.getElementById('ticketsModal');
+            modalEl.addEventListener('hidden.bs.modal', () => { activeStatusInModal = null; }, { once: true });
             
             const statusLabels = { 'nuevo': 'Nuevos', 'proceso': 'En Proceso', 'cerrado': 'Cerrados' };
             titleSpan.textContent = statusLabels[status] || status;
@@ -179,7 +188,8 @@
                                 <td class="fw-bold text-primary">TICKET-${String(t.idOrden).padStart(3, '0')}</td>
                                 <td>${t.cliente}</td>
                                 <td>${t.nomenclatura}</td>
-                                <td class="text-wrap text-start" style="max-width: 300px;">${t.descripcion}</td>`;
+                                <td class="text-wrap text-start" style="max-width: 300px;">${t.descripcion}</td>
+                                <td><span class="badge bg-secondary">${t.atendidoPor || t.atendido_por || t.asignadoA || t.asignado_a || 'Sin asignar'}</span></td>`;
                         
                         if (isCerrado) {
                             rowHtml += `<td class="text-wrap text-start" style="max-width: 300px;">${t.comentarios || ''}</td>`;
@@ -192,6 +202,33 @@
             } catch (error) {
                 tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-4 text-danger">Error al cargar los datos.</td></tr>`;
             }
+        }
+
+        // Función para refrescar el contenido del modal sin cerrarlo
+        async function refreshModalData() {
+            if (!activeStatusInModal) return;
+            
+            const isCerrado = (activeStatusInModal === 'cerrado');
+            try {
+                const response = await fetch(`@Url.Action("GetTicketsByStatus", "Dashboard")?status=${activeStatusInModal}`);
+                const data = await response.json();
+                const tableBody = document.getElementById('ticketsListBody');
+                
+                tableBody.innerHTML = '';
+                data.forEach(t => {
+                    let rowHtml = `
+                        <tr class="text-center align-middle">
+                            <td class="fw-bold text-primary">TICKET-${String(t.idOrden).padStart(3, '0')}</td>
+                            <td>${t.cliente}</td>
+                            <td>${t.nomenclatura}</td>
+                            <td class="text-wrap text-start" style="max-width: 300px;">${t.descripcion}</td>
+                            <td><span class="badge bg-secondary">${t.atendidoPor || t.atendido_por || t.asignadoA || t.asignado_a || 'Sin asignar'}</span></td>`;
+                    
+                    if (isCerrado) rowHtml += `<td class="text-wrap text-start" style="max-width: 300px;">${t.comentarios || ''}</td>`;
+                    rowHtml += `</tr>`;
+                    tableBody.innerHTML += rowHtml;
+                });
+            } catch (e) { console.error("Error al refrescar modal:", e); }
         }
 
         async function updateDashboardData() {
@@ -226,6 +263,9 @@
                         cardBody.querySelector('.mt-2 .text-muted').textContent = `${percentage}% del total`;
                     }
                 });
+
+                // Si hay un modal abierto, actualizar su lista de tickets también
+                if (activeStatusInModal) await refreshModalData();
 
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
