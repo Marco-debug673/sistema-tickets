@@ -1,0 +1,132 @@
+﻿﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio de Sesión</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+     <style>
+    .btn-anim:hover {
+      transform: scale(1.03);
+      transition: transform 0.3s ease;
+    }
+
+    .register-link:hover {
+      text-decoration: underline;
+      transition: color 0.3s ease;
+    }
+
+    body {
+      background-color: #b6b4b4fd !important;
+    }
+
+    .text-custom {
+      color: #1e539f !important;
+    }
+
+    .shadow-thick {
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85) !important;
+    }
+     </style>
+</head>
+<body>
+    <div class="container min-vh-100 d-flex justify-content-center align-items-center">
+        <div class="col-12 col-md-10 col-lg-8 col-xl-6">
+            <div class="d-flex justify-content-center align-items-center gap-3 mb-4 flex-wrap">
+                <!-- Ajusta los nombres de las imágenes según tus archivos en wwwroot/imagenes -->
+                <img src="~/imagenes/grupo cruces.png" alt="Logo" style="max-height: 80px; width: auto;" onerror="this.style.display='none'">
+            </div>
+            <form id="formulario-sesion" method="post" action="@Url.Action("Login", "Account")" class="bg-white p-5 rounded shadow-thick">
+                <h2 class="text-custom mb-3 text-center">Inicio de Sesión</h2>
+
+                @if (ViewBag.ErrorMessage != null)
+                {
+                    <div class="alert alert-danger text-center py-2 mb-3">@ViewBag.ErrorMessage</div>
+                }
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success text-center py-2 mb-3">@TempData["SuccessMessage"]</div>
+                }
+
+                <div class="row g-3">
+                    <div class="mb-3">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="username" name="username" placeholder="Nombre de Usuario">
+                            <label for="username">Usuario</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="mb-1">
+                        <div class="form-floating mb-3 position-relative">
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña">
+                            <label for="password">Contraseña</label>
+                        </div>
+                    </div>
+                </div>
+                    <div class="mb-4">
+                        <a href="reset_password.html" class="text-decoration-none text-custom">¿Has olvidado tu contraseña?</a>
+                    </div>
+                    <div class="d-grid mb-3">
+                        <button class="btn btn-warning btn-anim text-custom fw-bold" type="submit" id="loginBtn">Entrar</button>
+                    </div>
+            </form>
+        </div>
+    </div>
+    <!-- Modal de Selección de Servicio -->
+    <div class="modal fade" id="selectionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-white text-dark border-primary shadow-lg">
+                <div class="modal-header border-bottom-0 justify-content-center">
+                    <h5 class="modal-title fw-bold text-custom">¿Qué servicio necesita?</h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="mb-4 text-muted">Por favor, selecciona el tipo de servicio para continuar:</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="@Url.Action("solicitud_servicio_software", "Solicitud")" class="btn btn-primary btn-lg btn-anim px-4">Software</a>
+                        <a href="@Url.Action("solicitud_servicio", "Solicitud")" class="btn btn-warning btn-lg btn-anim px-4 text-dark fw-bold">Hardware</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de Selección de Historial para gerencia001 -->
+    <div class="modal fade" id="historySelectionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-white text-dark border-primary shadow-lg">
+                <div class="modal-header border-bottom-0 justify-content-center">
+                    <h5 class="modal-title fw-bold text-custom">¿Qué servicio desea ver?</h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="mb-4 text-muted">Por favor, selecciona el tipo de servicio para continuar:</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="@Url.Action("historial_servicio_software", "Historial")" class="btn btn-primary btn-lg btn-anim px-4">Software</a>
+                        <a href="@Url.Action("historial_servicio", "Historial")" class="btn btn-warning btn-lg btn-anim px-4 text-dark fw-bold">Hardware</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @if (TempData["ShowServiceSelection"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var myModal = new bootstrap.Modal(document.getElementById('selectionModal'));
+                myModal.show();
+            });
+        </script>
+    }
+    @if (TempData["ShowHistorySelection"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var historyModal = new bootstrap.Modal(document.getElementById('historySelectionModal'));
+                historyModal.show();
+            });
+        </script>
+    }
+</body>
+</html>

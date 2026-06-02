@@ -1,0 +1,245 @@
+@{
+    Layout = null;
+    int total = ViewBag.Total ?? 0;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Servicios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .chart-container { position: relative; height: 160px; width: 100%; }
+        .btn-anim:hover { transform: scale(1.05); transition: 0.3s; }
+        .card-stat { transition: all 0.3s ease; border-radius: 15px; }
+        .card-stat:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+        <div class="container-fluid container">
+            <span class="navbar-brand mb-0 h1"><i class="bi bi-grid-fill me-2"></i> Dashboard</span>
+            <div class="d-flex gap-2">
+                <a href="@Url.Action("historial_servicio", "Historial")" class="btn btn-outline-light btn-sm btn-anim rounded-pill px-3">
+                    <i class="bi bi-clock-history me-1"></i> Servicios de Hardware
+                </a>
+                <a href="@Url.Action("Logout", "Account")" class="btn btn-danger btn-sm btn-anim rounded-pill px-3">
+                    <i class="bi bi-box-arrow-right"></i> Salir
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mb-5 text-center">
+            <div class="col-12">
+                <div class="badge bg-primary fs-5 px-4 py-2 rounded-pill shadow-sm">
+                    Total: @total Tickets
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            @{
+                var statuses = new[] { 
+                    new { Id = "nuevo", Label = "Nuevos", Color = "#0d6efd", Value = (int)ViewBag.Nuevo },
+                    new { Id = "proceso", Label = "En Proceso", Color = "#6c757d", Value = (int)ViewBag.Proceso },
+                    new { Id = "cerrado", Label = "Cerrados", Color = "#198754", Value = (int)ViewBag.Cerrado }
+                };
+            }
+
+            @foreach (var s in statuses)
+            {
+                var percentage = total > 0 ? (s.Value * 100.0 / total).ToString("F1") : "0";
+                <div class="col-sm-6 col-md-4 col-lg">
+                    <div class="card h-100 shadow-sm border-0 card-stat">
+                        <div class="card-body text-center p-4">
+                            <h6 class="text-uppercase text-muted mb-3 fw-bold small">@s.Label</h6>
+                            <div class="chart-container mb-3">
+                                <canvas id="chart-@s.Id"></canvas>
+                            </div>
+                            <div class="mt-2">
+                                <span class="h3 fw-bold mb-0">@s.Value</span>
+                                <p class="text-muted small mb-0">@percentage% del total</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <!-- Modal para mostrar tickets por estatus -->
+    <div class="modal fade" id="ticketsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border-primary shadow-lg">
+                <div class="modal-header border-primary">
+                    <h5 class="modal-title fw-bold">Tickets - <span id="modalStatusTitle"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0">
+                            <thead class="table-dark border-secondary">
+                                <tr class="text-center">
+                                    <th>Folio</th>
+                                    <th>Cliente</th>
+                                    <th>Nomenclatura</th>
+                                    <th>Descripción</th>
+                                    <th id="commentsHeader">Solución</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ticketsListBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function initChart(id, val, total, color) {
+            const ctx = document.getElementById('chart-' + id)?.getContext('2d');
+            const rest = Math.max(0, total - val);
+            
+            if (!ctx) return; // Ensure context exists before creating chart
+
+            const chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [id, 'Otros'],
+                    datasets: [{
+                        data: [val, rest],
+                        backgroundColor: [color, '#f1f3f5'],
+                        hoverOffset: 4,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (evt, activeElements) => {
+                        // Solo reacciona si se hace clic en el segmento de color (index 0)
+                        if (activeElements.length > 0 && activeElements[0].index === 0) {
+                            showTicketsByStatus(id);
+                        }
+                    },
+                    onHover: (event, activeElements) => {
+                        // Cambia el cursor a pointer cuando pasa sobre el segmento de color
+                        event.native.target.style.cursor = activeElements.length > 0 && activeElements[0].index === 0 ? 'pointer' : 'default';
+                    }
+                }
+            });
+            charts[id] = chartInstance; // Store the chart instance
+            return chartInstance;
+        }
+
+        const charts = {}; // Global object to store chart instances
+
+        async function showTicketsByStatus(status) {
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('ticketsModal'));
+            const titleSpan = document.getElementById('modalStatusTitle');
+            const tableBody = document.getElementById('ticketsListBody');
+            const commentsHeader = document.getElementById('commentsHeader');
+            
+            const isCerrado = (status === 'cerrado');
+            const colCount = isCerrado ? 5 : 4;
+
+            if (isCerrado) {
+                commentsHeader.classList.remove('d-none');
+            } else {
+                commentsHeader.classList.add('d-none');
+            }
+            
+            const statusLabels = { 'nuevo': 'Nuevos', 'proceso': 'En Proceso', 'cerrado': 'Cerrados' };
+            titleSpan.textContent = statusLabels[status] || status;
+            tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-4">Cargando tickets...</td></tr>`;
+            
+            modal.show();
+
+            try {
+                const response = await fetch(`@Url.Action("GetTicketsByStatus", "Dashboard")?status=${status}`);
+                const data = await response.json();
+                
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-4 text-muted">No hay tickets con este estatus.</td></tr>`;
+                } else {
+                    data.forEach(t => {
+                        let rowHtml = `
+                            <tr class="text-center align-middle">
+                                <td class="fw-bold text-primary">TICKET-${String(t.idOrden).padStart(3, '0')}</td>
+                                <td>${t.cliente}</td>
+                                <td>${t.nomenclatura}</td>
+                                <td class="text-wrap text-start" style="max-width: 300px;">${t.descripcion}</td>`;
+                        
+                        if (isCerrado) {
+                            rowHtml += `<td class="text-wrap text-start" style="max-width: 300px;">${t.comentarios || ''}</td>`;
+                        }
+                        
+                        rowHtml += `</tr>`;
+                        tableBody.innerHTML += rowHtml;
+                    });
+                }
+            } catch (error) {
+                tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-4 text-danger">Error al cargar los datos.</td></tr>`;
+            }
+        }
+
+        async function updateDashboardData() {
+            try {
+                const response = await fetch('@Url.Action("GetDashboardData", "Dashboard")');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                const total = data.total; // Ensure property name matches JSON output
+                document.querySelector('.badge.bg-primary.fs-5').textContent = `Total: ${total} Tickets`;
+
+                const statusesConfig = [
+                    { id: "nuevo", label: "Nuevos", color: "#0d6efd" },
+                    { id: "proceso", label: "En Proceso", color: "#6c757d" },
+                    { id: "cerrado", label: "Cerrados", color: "#198754" }
+                ];
+
+                statusesConfig.forEach(s => {
+                    const chart = charts[s.id];
+                    // Accedemos a las propiedades en minúsculas tal como las envía el serializador JSON por defecto
+                    const value = data[s.id]; 
+                    if (chart) {
+                        const rest = Math.max(0, total - value);
+                        chart.data.datasets[0].data = [value, rest];
+                        chart.update();
+
+                        const percentage = total > 0 ? (value * 100.0 / total).toFixed(1) : "0";
+                        const cardBody = document.querySelector(`#chart-${s.id}`).closest('.card-body');
+                        cardBody.querySelector('.mt-2 .h3').textContent = value;
+                        cardBody.querySelector('.mt-2 .text-muted').textContent = `${percentage}% del total`;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart('nuevo', @ViewBag.Nuevo, @total, '#0d6efd');
+            initChart('proceso', @ViewBag.Proceso, @total, '#6c757d');
+            initChart('cerrado', @ViewBag.Cerrado, @total, '#198754');
+
+            // Set up real-time updates every 10 seconds
+            setInterval(updateDashboardData, 10000); // Update every 10 seconds
+        });
+    </script>
+</body>
+</html>

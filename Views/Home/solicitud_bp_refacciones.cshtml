@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Servicio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+    .btn-anim:hover {
+      transform: scale(1.03);
+      transition: transform 0.3s ease;
+    }
+     </style>
+</head>
+<body class="bg-info">
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-11 col-lg-10 col-xl-9">
+                <form action="@Url.Action("GuardarBPRefacciones", "BP_Refacciones")" method="post" enctype="multipart/form-data" class="bg-dark p-5 rounded shadow w-100">
+                    <div class="d-flex align-items-center justify-content-center mb-4">
+                        <a href="@Url.Action("Logout", "Account")" class="btn btn-outline-danger btn-anim me-3" title="Cerrar Sesión / Volver">
+                            <i class="bi bi-box-arrow-right fs-4"></i>
+                        </a>
+                        <h2 class="text-primary mb-0">Solicitud de Business Pro del área de Refacciones</h2>
+                    </div>
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger text-center" role="alert">
+                            @ViewBag.ErrorMessage
+                        </div>
+                    }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success text-center" role="alert">
+                            @TempData["SuccessMessage"]
+                        </div>
+                    }
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="contacto" name="contacto" placeholder="Contacto">
+                                <label for="contacto">Contacto</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="Teléfono">
+                                <label for="telefono">Teléfono</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="extension" name="extension" placeholder="Extensión">
+                                <label for="extension">Extensión</label>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="celular" name="celular" placeholder="Celular">
+                                <label for="celular">Celular</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating mb-3">
+                                <input type="file" class="form-control" id="evidenciaFiles" name="evidenciaFiles" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" placeholder="Adjuntar Archivos" multiple>
+                                <label for="evidenciaFiles">Evidencia</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="puesto" name="puesto" placeholder="Puesto">
+                                <label for="puesto">Puesto</label>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row g-2">
+                        <div class="col-md-12">
+                            <div class="form-floating">
+                                <textarea class="form-control" id="descripcion_proceso" name="descripcion_proceso" placeholder="Descripcion del proceso" style="height: 100px"></textarea>
+                                <label for="descripcion_proceso">Descripción del Proceso</label>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-3">
+                        <button class="btn btn-warning btn-anim flex-fill" type="submit" id="saveBtn" >Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

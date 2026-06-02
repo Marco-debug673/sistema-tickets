@@ -1,0 +1,432 @@
+@model IEnumerable<SistemaTickets.Models.HistorialItemViewModel>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Solicitud de Servicio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+    .btn-anim:hover {
+      transform: scale(1.03);
+      transition: transform 0.3s ease;
+    }
+    .img-clickable {
+      cursor: zoom-in;
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+      border: 2px solid #fff;
+      background-color: #f8f9fa;
+    }
+    .file-icon {
+      font-size: 2rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .file-icon:hover { transform: scale(1.2); }
+    .img-clickable:hover {
+      transform: scale(1.2);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+    #fullImage, #fileViewer, #localDocViewer {
+      height: 75vh;
+      object-fit: contain;
+      overflow: auto;
+    }
+    #localDocViewer {
+      background-color: white;
+      color: black;
+      text-align: left;
+      padding: 20px;
+    }
+     </style>
+</head>
+<body class="bg-info">
+    <div class="container-fluid py-4">
+        <!-- Botones de cabecera -->
+        <div class="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-2">
+            @if (ViewBag.Usuario == "gerencia001")
+            {
+                <a href="@Url.Action("historial_servicio_software", "Historial")" class="btn btn-dark shadow btn-anim" title="Cambiar a Software">
+                    <i class="bi bi-laptop fs-4"></i>
+                </a>
+            }
+            <button class="btn btn-warning shadow btn-anim fw-bold d-flex align-items-center gap-2" type="submit" id="saveBtn">
+                <i class="bi bi-check-circle-fill fs-4"></i> Guardar
+            </button>
+            <a href="@Url.Action("Dashboard", "Dashboard")" class="btn btn-primary shadow btn-anim" title="Panel">
+                <i class="bi bi-grid-fill fs-4"></i>
+            </a>
+            <a href="@Url.Action("Logout", "Account")" class="btn btn-danger shadow btn-anim" title="Cerrar Sesión">
+                <i class="bi bi-box-arrow-right fs-4"></i>
+            </a>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <h2 class="text-dark fw-bold mb-4 text-center">Servicios de Hardware</h2>
+                <div class="d-flex flex-column flex-md-row justify-content-center align-items-center mb-4 gap-3">
+                    <div class="input-group shadow-sm" style="max-width: 400px;">
+                        <span class="input-group-text bg-dark text-white border-dark">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="searchInput" class="form-control border-dark" placeholder="Buscar por id_ticket o nomenclatura...">
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-dark dropdown-toggle shadow-sm btn-anim" type="button" id="filterStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-funnel-fill me-1"></i> Filtrar por Estatus
+                        </button>
+                        <ul class="dropdown-menu shadow" aria-labelledby="filterStatusDropdown">
+                            <li><a class="dropdown-item status-filter" href="#" data-status="todos">Ver Todos</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item status-filter" href="#" data-status="nuevo">Nuevo</a></li>
+                            <li><a class="dropdown-item status-filter" href="#" data-status="proceso">En proceso</a></li>
+                            <li><a class="dropdown-item status-filter" href="#" data-status="cerrado">Cerrado</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="historialMessageContainer" class="mt-3 mb-3">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                </div>
+
+                <div class="card shadow border-0">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover table-striped align-middle text-nowrap bg-white">
+                                <thead class="table-dark text-center align-middle">
+                                <tr>
+                                    <th scope="col">Folio</th>
+                                    <th scope="col">Cliente</th>
+                                    <th scope="col">Nomenclatura</th>
+                                    <th scope="col">Descripción</th>
+                                    <th scope="col">Foto</th>
+                                    <th scope="col">Estatus</th>
+                                    <th scope="col">Atendido por</th>
+                                    <th scope="col">Comentarios</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-services">
+                                @foreach (var item in Model)
+                                {
+                                    var rowClass = item.Detalle?.estatus switch
+                                    {
+                                        "nuevo" => "table-primary",
+                                        "proceso" => "table-secondary",
+                                        "cerrado" => "table-success",
+                                        _ => ""
+                                    };
+                                    <tr data-id-orden="@item.Orden.id_orden" class="@rowClass">
+                                        <td>TICKET-@item.Orden.id_orden.ToString("D3")</td>
+                                        <td>@item.Orden.nombre_cliente</td>
+                                        <td>@item.Orden.nomenclatura</td>
+                                        <td>@item.Orden.descripcion</td>
+                                        <td class="text-center">
+                                            @if (!string.IsNullOrEmpty(item.Orden.evidencia))
+                                            {
+                                                <div class="d-flex flex-wrap justify-content-center gap-1" style="min-width: 100px;">
+                                                    @foreach (var foto in item.Orden.evidencia.Split(','))
+                                                    {
+                                                        var ext = System.IO.Path.GetExtension(foto).ToLower();
+                                                        if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+                                                        {
+                                                            <img src="~/uploads/@foto" alt="Evidencia" 
+                                                                 style="width: 45px; height: 45px; object-fit: cover;" 
+                                                                 class="rounded shadow-sm img-clickable" 
+                                                                 onclick="openViewer('@Url.Content("~/uploads/" + foto)', 'image')">
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="bi @(ext == ".pdf" ? "bi-file-earmark-pdf text-danger" : 
+                                                                          ext.Contains("doc") ? "bi-file-earmark-word text-primary" :
+                                                                          ext.Contains("xls") ? "bi-file-earmark-excel text-success" :
+                                                                          ext.Contains("ppt") ? "bi-file-earmark-ppt text-warning" : "bi-file-earmark") file-icon"
+                                                               onclick="openViewer('@Url.Content("~/uploads/" + foto)', 'file')"></i>
+                                                        }
+                                                    }
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="estatus" title="Seleccionar estatus del servicio">
+                                                <option value="" selected disabled>Seleccione una opción</option>
+                                                <option value="nuevo" selected="@(item.Detalle?.estatus == "nuevo")">Nuevo</option>
+                                                <option value="proceso" selected="@(item.Detalle?.estatus == "proceso")">En proceso</option>
+                                                <option value="cerrado" selected="@(item.Detalle?.estatus == "cerrado")">Cerrado</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="asignado_a" title="Asignar técnico" @(ViewBag.Usuario?.ToLower() != "jefe0018" ? "disabled" : "")>
+                                                <option value="">Sin asignar</option>
+                                                <option value="jefe0018" selected="@(item.Detalle?.asignado_a == "jefe0018")">Jefe 0018</option>
+                                                <option value="asistente0011" selected="@(item.Detalle?.asignado_a == "asistente0011")">Asistente 0011</option>
+                                                <option value="asistente0012" selected="@(item.Detalle?.asignado_a == "asistente0012")">Asistente 0012</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <div class="form-floating">
+                                                <textarea class="form-control" placeholder="Escriba un comentario" id="comentario-@item.Orden.id_orden" style="height: 60px; min-width: 200px;">@item.Detalle?.comentarios</textarea>
+                                                <label for="comentario-@item.Orden.id_orden">Comentario</label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver imagen en grande -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white" id="imageModalLabel">Evidencia del Servicio</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <!-- Visores Locales -->
+                    <img src="" id="fullImage" class="img-fluid rounded-bottom w-100 d-none" alt="Vista Previa">
+                    <embed src="" id="fileViewer" class="w-100 d-none" type="application/pdf" style="height: 75vh;">
+                    <!-- Contenedor para renderizado local de Office -->
+                    <div id="localDocViewer" class="w-100 d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librerías para visualización local (Descargarlas para uso 100% offline) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function openViewer(url, type) {
+            const img = document.getElementById('fullImage');
+            const embed = document.getElementById('fileViewer');
+            const localViewer = document.getElementById('localDocViewer');
+            const modalElement = document.getElementById('imageModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+            img.classList.add('d-none');
+            embed.classList.add('d-none');
+            localViewer.classList.add('d-none');
+            localViewer.innerHTML = "Cargando documento...";
+
+            if (type === 'image') {
+                img.src = url;
+                img.classList.remove('d-none');
+                modal.show();
+            } else {
+                const ext = url.split('.').pop().toLowerCase();
+                if (ext === 'pdf') {
+                    embed.src = url;
+                    embed.classList.remove('d-none');
+                    modal.show();
+                } else {
+                    // Procesamiento Local para Word y Excel
+                    modal.show();
+                    localViewer.classList.remove('d-none');
+                    try {
+                        const response = await fetch(url);
+                        const arrayBuffer = await response.arrayBuffer();
+
+                        if (ext === 'docx') {
+                            const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+                            localViewer.innerHTML = result.value;
+                        } else if (ext === 'xlsx' || ext === 'xls') {
+                            const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            localViewer.innerHTML = `<div class="table-responsive">${XLSX.utils.sheet_to_html(worksheet)}</div>`;
+                        } else if (ext === 'pptx') {
+                            localViewer.innerHTML = `
+                                <div class="p-5 text-center">
+                                    <i class="bi bi-file-earmark-ppt text-danger" style="font-size: 4rem;"></i>
+                                    <p class="mt-3">La visualización local de PowerPoint es limitada.</p>
+                                    <a href="${url}" class="btn btn-danger" download>Descargar para ver</a>
+                                </div>`;
+                        }
+                    } catch (error) {
+                        localViewer.innerHTML = "Error al cargar el documento localmente: " + error.message;
+                    }
+                }
+            }
+        }
+
+        // Lógica de cambio de color de fila según el estatus seleccionado
+        function updateRowColor(selectElement) {
+            const row = selectElement.closest('tr');
+            const status = selectElement.value;
+            const classes = ['table-primary', 'table-secondary', 'table-success'];
+            row.classList.remove(...classes);
+
+            const statusClasses = {
+                'nuevo': 'table-primary',
+                'proceso': 'table-secondary',
+                'cerrado': 'table-success'
+            };
+
+            if (statusClasses[status]) {
+                row.classList.add(statusClasses[status]);
+            }
+        }
+
+        document.querySelectorAll('select[name="estatus"]').forEach(select => {
+            select.addEventListener('change', function () { updateRowColor(this); });
+        });
+
+        function displayBootstrapAlert(message, type) {
+            const container = document.getElementById('historialMessageContainer');
+            if (!container) {
+                console.error('Message container not found!');
+                return;
+            }
+            container.innerHTML = ''; // Clear previous messages
+
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            container.appendChild(alertDiv);
+
+            setTimeout(() => {
+                const bootstrapAlert = bootstrap.Alert.getInstance(alertDiv);
+                if (bootstrapAlert) bootstrapAlert.close(); else alertDiv.remove();
+            }, 5000); // Auto-dismiss after 5 seconds
+        }
+
+        // Lógica de filtrado por estatus
+        document.querySelectorAll('.status-filter').forEach(item => {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                const status = this.dataset.status;
+                const rows = document.querySelectorAll('#table-services tr');
+                
+                rows.forEach(row => {
+                    if (status === 'todos') {
+                        row.style.display = '';
+                    } else {
+                        const select = row.querySelector('select[name="estatus"]');
+                        row.style.display = (select && select.value === status) ? "" : "none";
+                    }
+                });
+                // Actualizar texto del botón de filtro
+                document.getElementById('filterStatusDropdown').innerHTML = `<i class="bi bi-funnel-fill me-1"></i> ${this.textContent}`;
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#table-services tr');
+
+            rows.forEach(row => {
+                const ticketId = row.cells[0].textContent.toLowerCase();
+                const nomenclatura = row.cells[2].textContent.toLowerCase();
+
+                const matches = ticketId.includes(filter) || nomenclatura.includes(filter);
+                row.style.display = matches ? "" : "none";
+            });
+        });
+
+        // Función para actualizar los estatus en la tabla sin recargar la página
+        async function updateTableStatus() {
+            try {
+                const response = await fetch('@Url.Action("GetHistorialStatus", "Historial")');
+                if (!response.ok) return;
+                
+                const updates = await response.json();
+                updates.forEach(update => {
+                    const row = document.querySelector(`tr[data-id-orden="${update.idOrden}"]`);
+                    if (row) {
+                        const select = row.querySelector('select[name="estatus"]');
+                        // Solo actualizamos si el valor del servidor es diferente al actual
+                        // y el usuario NO tiene el foco puesto en ese selector (para no interrumpir su trabajo)
+                        if (select && select.value !== update.estatus && document.activeElement !== select) {
+                            select.value = update.estatus;
+                            updateRowColor(select);
+                        }
+                        // Actualizar asignación si cambió en el servidor
+                        const asignado = row.querySelector('select[name="asignado_a"]');
+                        if (asignado && asignado.value !== update.asignadoA && document.activeElement !== asignado) {
+                            asignado.value = update.asignadoA || "";
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error al actualizar estatus automáticamente:", error);
+            }
+        }
+
+        // Configura el intervalo para verificar actualizaciones cada 60 segundos
+        document.addEventListener('DOMContentLoaded', () => {
+            setInterval(updateTableStatus, 60000);
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', async function (event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const updatedItems = [];
+            const rows = document.querySelectorAll('#table-services tr');
+
+            rows.forEach(row => {
+                // Only process visible rows (if filtered)
+                if (row.style.display === "none") {
+                    return;
+                }
+
+                const idOrden = row.dataset.idOrden; // Get id_orden from data-id-orden attribute
+                const estatusSelect = row.querySelector('select[name="estatus"]');
+                const asignadoSelect = row.querySelector('select[name="asignado_a"]');
+                const comentariosTextarea = row.querySelector('textarea');
+
+                if (idOrden && estatusSelect && asignadoSelect && comentariosTextarea) {
+                    updatedItems.push({
+                        IdOrden: parseInt(idOrden),
+                        Estatus: estatusSelect.value,
+                        AsignadoA: asignadoSelect.value,
+                        Comentarios: comentariosTextarea.value
+                    });
+                }
+            });
+
+            if (updatedItems.length === 0) {
+                alert('No hay elementos visibles para guardar o no se seleccionó ningún estatus/comentario.');
+                return;
+            }
+
+            try {
+                const response = await fetch('@Url.Action("GuardarCambiosHistorial", "Historial")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedItems)
+                });
+                const result = await response.json();
+                displayBootstrapAlert(result.message, result.success ? 'success' : 'danger');
+            } catch (error) {
+                displayBootstrapAlert('Error al conectar con el servidor: ' + error.message, 'danger');
+            }
+        });
+    </script>
+</body>
+</html> 
