@@ -224,6 +224,24 @@
                                     <th scope="col">Celular</th>
                                     <th scope="col">Descripción</th>
                                     <th scope="col">Evidencia</th>
+                                    <th scope="col">Factura</th>
+                                    <th scope="col">Fecha Compra</th>
+                                    <th scope="col">Importe</th>
+                                    <th scope="col">Ubicación</th>
+                                    <th scope="col">Tipo Activo</th>
+                                    <th scope="col">Vida Útil</th>
+                                    <th scope="col">Vida Útil Pendiente</th>
+                                    <th scope="col">Valor Recuperación</th>
+                                    <th scope="col">Método</th>
+                                    <th scope="col">Fecha Inicio Uso</th>
+                                    <th scope="col">Porcentaje Depreciación</th>
+                                    <th scope="col">Fecha Ultima Depreciación</th>
+                                    <th scope="col">Depreciación Acumulada</th>
+                                    <th scope="col">Fecha Baja</th>
+                                    <th scope="col">Concepto Baja</th>
+                                    <th scope="col">Usuario</th>
+                                    <th scope="col">FechaOpe</th>
+                                    <th scope="col">HoraOpe</th>
                                 </tr>
                             </thead>
                             <tbody id="table-services" class="text-center">
@@ -234,7 +252,9 @@
                                         <td>@item.TipoSolicitud @(string.IsNullOrEmpty(item.Area) ? "" : "- " + item.Area)</td>
                                         <td>@item.Nombre</td>
                                         <td>@item.Contacto</td>
-                                        <td>@item.Nomenclatura</td>
+                                        <td style="cursor: pointer;" ondblclick="abrirModalNomenclatura('@item.Nomenclatura')" title="Doble clic para ver historial">
+                                            <i class="bi bi-search text-primary me-1 small"></i>@item.Nomenclatura
+                                        </td>
                                         <td>@item.Empresa</td>
                                         <td>@item.Sucursal</td>
                                         <td>@item.Puesto</td>
@@ -269,6 +289,24 @@
                                                 </div>
                                             }
                                         </td>
+                                        <td>@item.Factura</td>
+                                        <td>@item.FechaCompra</td>
+                                        <td>@item.ImporteCompra</td>
+                                        <td>@item.Ubicacion</td>
+                                        <td>@item.TipoActivo</td>
+                                        <td>@item.VidaUtil</td>
+                                        <td>@item.VidaUtilPendiente</td>
+                                        <td>@item.ValorRecuperacion</td>
+                                        <td>@item.Metodo</td>
+                                        <td>@item.FechaInicioUso</td>
+                                        <td>@item.PorcentajeDepreciacion</td>
+                                        <td>@item.FechaUltimaDepreciacion</td>
+                                        <td>@item.DepreciacionAcumulada</td>
+                                        <td>@item.FechaBaja</td>
+                                        <td>@item.ConceptoBaja</td>
+                                        <td>@item.UsuarioOpe</td>
+                                        <td>@item.FechaOpe</td>
+                                        <td>@item.HoraOpe</td>
                                     </tr>
                                 }
                             </tbody>
@@ -324,6 +362,61 @@
                 <div class="modal-footer border-primary justify-content-between">
                     <button type="button" class="btn btn-outline-danger btn-sm" onclick="resetSecondaryFilters()">Limpiar Filtros</button>
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para mostrar tickets por nomenclatura -->
+    <div class="modal fade" id="nomenclaturaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-dark text-white shadow-lg">
+                <div class="modal-header border-primary">
+                    <h5 class="modal-title">Tickets de: <span id="modalNomenclaturaTitle" class="text-info"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover table-bordered mb-0 text-nowrap align-middle">
+                            <thead>
+                                <tr class="text-center">
+                                    <th>Folio</th>
+                                    <th>Área</th>
+                                    <th>Nombre</th>
+                                    <th>Contacto</th>
+                                    <th>Nomenclatura</th>
+                                    <th>Empresa</th>
+                                    <th>Sucursal</th>
+                                    <th>Puesto</th>
+                                    <th>Departamento</th>
+                                    <th>Teléfono</th>
+                                    <th>Extensión</th>
+                                    <th>Celular</th>
+                                    <th>Descripción</th>
+                                    <th>Evidencia</th>
+                                    <th>Factura</th>
+                                    <th>Fecha Compra</th>
+                                    <th>Importe</th>
+                                    <th>Ubicación</th>
+                                    <th>Tipo Activo</th>
+                                    <th>Vida Útil</th>
+                                    <th>Vida Útil Pendiente</th>
+                                    <th>Valor Recuperación</th>
+                                    <th>Método</th>
+                                    <th>Fecha Inicio Uso</th>
+                                    <th>Porcentaje Depreciación</th>
+                                    <th>Fecha Ultima Depreciación</th>
+                                    <th>Depreciación Acumulada</th>
+                                    <th>Fecha Baja</th>
+                                    <th>Concepto Baja</th>
+                                    <th>Usuario</th>
+                                    <th>FechaOpe</th>
+                                    <th>HoraOpe</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nomenclaturaTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -519,14 +612,16 @@
             let columnsToShow = [];
             
             if (tipo === 'todos') {
-                columnsToShow = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13]; // Mostrar casi todo
+                columnsToShow = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
             } else if (tipo === 'altas' || tipo === 'bajas') {
-                columnsToShow = [2, 4, 5, 6, 7, 8]; // Datos de empleado/estructura
+                columnsToShow = [2, 4, 5, 6, 7, 8, 12];
             } else if (tipo.includes('business pro') || tipo === 'interfaces' || tipo.includes('incadea')) {
-                columnsToShow = [3, 7, 9, 10, 11, 13]; // Datos de contacto y técnicos
+                columnsToShow = [3, 7, 9, 10, 11, 12, 13];
+            } else if (tipo === 'activo fijo') {
+                columnsToShow = [4, 8, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
             }
 
-            const allDynamicIndices = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13];
+            const allDynamicIndices = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
 
             // Aplicar visibilidad a encabezados
             allDynamicIndices.forEach(index => {
@@ -625,6 +720,95 @@
                 document.getElementById('filterEmpresaDropdown').innerHTML = `<i class="bi bi-building-fill me-1"></i> ${this.textContent}`;
             });
         });
+
+        async function abrirModalNomenclatura(nomenclatura) {
+            if (!nomenclatura) return;
+
+            const modalElement = document.getElementById('nomenclaturaModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            const tableBody = document.getElementById('nomenclaturaTableBody');
+            document.getElementById('modalNomenclaturaTitle').textContent = nomenclatura;
+
+            tableBody.innerHTML = '<tr><td colspan="32" class="text-center py-4">Consultando base de datos...</td></tr>';
+            modal.show();
+
+            try {
+                const url = `@Url.Action("GetTicketsByNomenclatura", "HistorialSoftware")?nomenclatura=${encodeURIComponent(nomenclatura)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="32" class="text-center py-4 text-muted">No se encontraron tickets para esta nomenclatura.</td></tr>';
+                    return;
+                }
+
+                data.forEach(item => {
+                    // Replicar lógica de visualización de evidencia (imágenes e iconos)
+                    let evidenciaHtml = '';
+                    if (item.evidencia) {
+                        evidenciaHtml = '<div class="d-flex flex-wrap justify-content-center gap-1" style="min-width: 100px;">';
+                        item.evidencia.split(',').forEach(foto => {
+                            const ext = foto.split('.').pop().toLowerCase();
+                            const urlBase = '@Url.Content("~/uploads/")' + foto;
+                            if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+                                evidenciaHtml += `<img src="${urlBase}" alt="Evidencia" 
+                                                     style="width: 45px; height: 45px; object-fit: cover;" 
+                                                     class="rounded shadow-sm img-clickable" 
+                                                     onclick="openViewer('${urlBase}', 'image')">`;
+                            } else {
+                                let iconClass = 'bi-file-earmark';
+                                if (ext === 'pdf') iconClass = 'bi-file-earmark-pdf text-danger';
+                                else if (ext.includes('doc')) iconClass = 'bi-file-earmark-word text-primary';
+                                else if (ext.includes('xls')) iconClass = 'bi-file-earmark-excel text-success';
+                                else if (ext.includes('ppt')) iconClass = 'bi-file-earmark-ppt text-warning';
+                                
+                                evidenciaHtml += `<i class="bi ${iconClass} file-icon" onclick="openViewer('${urlBase}', 'file')"></i>`;
+                            }
+                        });
+                        evidenciaHtml += '</div>';
+                    }
+
+                    tableBody.innerHTML += `
+                        <tr class="text-center align-middle border-secondary">
+                            <td>${item.id}</td>
+                            <td><span class="badge bg-primary px-3">${item.tipoSolicitud} ${item.area ? '- ' + item.area : ''}</span></td>
+                            <td>${item.nombre || 'N/A'}</td>
+                            <td>${item.contacto || 'N/A'}</td>
+                            <td>${item.nomenclatura || 'N/A'}</td>
+                            <td>${item.empresa || 'N/A'}</td>
+                            <td>${item.sucursal || 'N/A'}</td>
+                            <td>${item.puesto || 'N/A'}</td>
+                            <td>${item.departamento || 'N/A'}</td>
+                            <td>${item.telefono || 'N/A'}</td>
+                            <td>${item.extension || ''}</td>
+                            <td>${item.celular || 'N/A'}</td>
+                            <td class="text-start text-wrap" style="max-width: 400px;">${item.descripcion}</td>
+                            <td>${evidenciaHtml}</td>
+                            <td>${item.factura || 'N/A'}</td>
+                            <td>${item.fechaCompra || 'N/A'}</td>
+                            <td>${item.importeCompra ? '$' + parseFloat(item.importeCompra).toLocaleString() : 'N/A'}</td>
+                            <td>${item.ubicacion || 'N/A'}</td>
+                            <td>${item.tipoActivo || 'N/A'}</td>
+                            <td>${item.vidaUtil || 'N/A'}</td>
+                            <td>${item.vidaUtilPendiente || 'N/A'}</td>
+                            <td>${item.valorRecuperacion || 'N/A'}</td>
+                            <td>${item.metodo || 'N/A'}</td>
+                            <td>${item.fechaInicioUso || 'N/A'}</td>
+                            <td>${item.porcentajeDepreciacion || 'N/A'}</td>
+                            <td>${item.fechaUltimaDepreciacion || 'N/A'}</td>
+                            <td>${item.depreciacionAcumulada || 'N/A'}</td>
+                            <td>${item.fechaBaja || 'N/A'}</td>
+                            <td>${item.conceptoBaja || 'N/A'}</td>
+                            <td>${item.usuarioOpe || 'N/A'}</td>
+                            <td>${item.fechaOpe || 'N/A'}</td>
+                            <td>${item.horaOpe || 'N/A'}</td>
+                        </tr>`;
+                });
+            } catch (error) {
+                tableBody.innerHTML = '<tr><td colspan="32" class="text-center py-4 text-danger">Hubo un problema al cargar los datos. Intente de nuevo.</td></tr>';
+            }
+        }
 
         // Listeners para los nuevos filtros
         document.querySelectorAll('.name-filter').forEach(item => {

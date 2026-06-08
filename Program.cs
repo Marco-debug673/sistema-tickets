@@ -31,13 +31,39 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-var connectionString = builder.Configuration.GetConnectionString("ConexionSQL") 
-    ?? throw new InvalidOperationException("La cadena de conexión 'ConexionSQL' no se encontró en la configuración.");
+var connectionLocal = builder.Configuration.GetConnectionString("ConexionSQL"); // Lee ConnectionStrings__ConexionSQL
+var connectionRemote = builder.Configuration["Connection:ConexionSQL"];        // Lee Connection__ConexionSQL
 
+// Registro del contexto Local (Base de datos 1)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionLocal));
+
+// Registro del contexto Remoto (Base de datos 2)
+if (!string.IsNullOrWhiteSpace(connectionRemote))
+{
+    builder.Services.AddDbContext<RemoteDbContext>(options =>
+        options.UseSqlServer(connectionRemote));
+}
 
 var app = builder.Build();
+
+// Probar la conexión a la base de datos al iniciar la aplicación
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        if (context.Database.CanConnect())
+        {
+            Console.WriteLine("✅ Conexión a la base de datos SQL Server establecida con éxito.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error crítico al conectar a la base de datos: {ex.Message}");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
