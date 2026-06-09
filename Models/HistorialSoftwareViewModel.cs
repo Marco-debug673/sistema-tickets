@@ -23,7 +23,9 @@ public class HistorialSoftwareViewModel
     public string? Estatus { get; set; }
     public string? OrigenTabla { get; set; }
 
-    // Propiedades adicionales para Activos Fijos (CON_ACTIVOS)
+    // Propiedades para Hardware y Activo Fijo
+    public string? AsignadoA { get; set; }
+    public string? Comentarios { get; set; }
     public string? Factura { get; set; }
     public string? FechaCompra { get; set; }
     public string? ImporteCompra { get; set; }

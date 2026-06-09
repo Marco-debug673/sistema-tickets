@@ -1,4 +1,4 @@
-@model IEnumerable<SistemaTickets.Models.HistorialItemViewModel>
+@model IEnumerable<SistemaTickets.Models.HistorialSoftwareViewModel>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -110,36 +110,59 @@
                                 <tr>
                                     <th scope="col">Folio</th>
                                     <th scope="col">Cliente</th>
+                                    <th scope="col">Tipo</th>
                                     <th scope="col">Nomenclatura</th>
                                     <th scope="col">Descripción</th>
                                     <th scope="col">Foto</th>
                                     <th scope="col">Estatus</th>
                                     <th scope="col">Atendido por</th>
                                     <th scope="col">Comentarios</th>
+                                    <!-- Columnas de Activo Fijo -->
+                                    <th scope="col" class="d-none AF-col">Factura</th>
+                                    <th scope="col" class="d-none AF-col">Fecha Compra</th>
+                                    <th scope="col" class="d-none AF-col">Importe</th>
+                                    <th scope="col" class="d-none AF-col">Ubicación</th>
+                                    <th scope="col" class="d-none AF-col">Tipo Activo</th>
+                                    <th scope="col" class="d-none AF-col">Vida Útil</th>
+                                    <th scope="col" class="d-none AF-col">Situación</th>
+                                    <th scope="col" class="d-none AF-col">Valor Recuperación</th>
+                                    <th scope="col" class="d-none AF-col">Método</th>
+                                    <th scope="col" class="d-none AF-col">Fecha Inicio Uso</th>
+                                    <th scope="col" class="d-none AF-col">Porcentaje Depreciación</th>
+                                    <th scope="col" class="d-none AF-col">Fecha Ultima Depreciación</th>
+                                    <th scope="col" class="d-none AF-col">Depreciación Acumulada</th>
+                                    <th scope="col" class="d-none AF-col">Fecha Baja</th>
+                                    <th scope="col" class="d-none AF-col">Concepto Baja</th>
+                                    <th scope="col" class="d-none AF-col">Usuario</th>
+                                    <th scope="col" class="d-none AF-col">FechaOpe</th>
+                                    <th scope="col" class="d-none AF-col">HoraOpe</th>
                                 </tr>
                             </thead>
                             <tbody id="table-services">
                                 @foreach (var item in Model)
                                 {
-                                    var rowClass = item.Detalle?.estatus switch
+                                    var rowClass = item.Estatus switch
                                     {
                                         "nuevo" => "table-primary",
                                         "proceso" => "table-secondary",
                                         "cerrado" => "table-success",
                                         _ => ""
                                     };
-                                    <tr data-id-orden="@item.Orden.id_orden" class="@rowClass">
-                                        <td>TICKET-@item.Orden.id_orden.ToString("D3")</td>
-                                        <td>@item.Orden.nombre_cliente</td>
-                                        <td>@item.Orden.nomenclatura</td>
-                                        <td>@item.Orden.descripcion</td>
+                                    <tr data-id-orden="@item.Id" data-tipo="@item.TipoSolicitud.ToLower()" class="@rowClass">
+                                        <td>@(item.TipoSolicitud == "Hardware" ? "TICKET-" + item.Id.ToString("D3") : "N/A")</td>
+                                        <td>@item.Nombre</td>
+                                        <td><span class="badge @(item.TipoSolicitud == "Hardware" ? "bg-dark" : "bg-warning text-dark")">@item.TipoSolicitud</span></td>
+                                        <td style="cursor: pointer;" ondblclick="abrirModalNomenclatura('@item.Nomenclatura')" title="Doble clic para ver historial">
+                                            <i class="bi bi-search text-primary me-1 small"></i>@item.Nomenclatura
+                                        </td>
+                                        <td class="text-wrap" style="max-width: 300px;">@item.Descripcion</td>
                                         <td class="text-center">
-                                            @if (!string.IsNullOrEmpty(item.Orden.evidencia))
+                                            @if (!string.IsNullOrEmpty(item.Evidencia))
                                             {
                                                 <div class="d-flex flex-wrap justify-content-center gap-1" style="min-width: 100px;">
-                                                    @foreach (var foto in item.Orden.evidencia.Split(','))
+                                                    @foreach (var foto in item.Evidencia!.Split(','))
                                                     {
-                                                        var ext = System.IO.Path.GetExtension(foto).ToLower();
+                                                        var ext = (System.IO.Path.GetExtension(foto) ?? "").ToLower();
                                                         if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
                                                         {
                                                             <img src="~/uploads/@foto" alt="Evidencia" 
@@ -162,23 +185,23 @@
                                         <td>
                                             <select class="form-select form-select-sm" name="estatus" title="Seleccionar estatus del servicio">
                                                 <option value="" selected disabled>Seleccione una opción</option>
-                                                <option value="nuevo" selected="@(item.Detalle?.estatus == "nuevo")">Nuevo</option>
-                                                <option value="proceso" selected="@(item.Detalle?.estatus == "proceso")">En proceso</option>
-                                                <option value="cerrado" selected="@(item.Detalle?.estatus == "cerrado")">Cerrado</option>
+                                                <option value="nuevo" selected="@(item.Estatus == "nuevo")">Nuevo</option>
+                                                <option value="proceso" selected="@(item.Estatus == "proceso")">En proceso</option>
+                                                <option value="cerrado" selected="@(item.Estatus == "cerrado")">Cerrado</option>
                                             </select>
                                         </td>
                                         <td>
                                             <select class="form-select form-select-sm" name="asignado_a" title="Asignar técnico" @(ViewBag.Usuario?.ToLower() != "jefe0018" ? "disabled" : "")>
                                                 <option value="">Sin asignar</option>
-                                                <option value="jefe0018" selected="@(item.Detalle?.asignado_a == "jefe0018")">Jefe 0018</option>
-                                                <option value="asistente0011" selected="@(item.Detalle?.asignado_a == "asistente0011")">Asistente 0011</option>
-                                                <option value="asistente0012" selected="@(item.Detalle?.asignado_a == "asistente0012")">Asistente 0012</option>
+                                                <option value="jefe0018" selected="@(item.AsignadoA == "jefe0018")">Jefe 0018</option>
+                                                <option value="asistente0011" selected="@(item.AsignadoA == "asistente0011")">Asistente 0011</option>
+                                                <option value="asistente0012" selected="@(item.AsignadoA == "asistente0012")">Asistente 0012</option>
                                             </select>
                                         </td>
                                         <td>
                                             <div class="form-floating">
-                                                <textarea class="form-control" placeholder="Escriba un comentario" id="comentario-@item.Orden.id_orden" style="height: 60px; min-width: 200px;">@item.Detalle?.comentarios</textarea>
-                                                <label for="comentario-@item.Orden.id_orden">Comentario</label>
+                                                <textarea class="form-control" placeholder="Escriba un comentario" id="comentario-@item.Id" style="height: 60px; min-width: 200px;">@item.Comentarios</textarea>
+                                                <label for="comentario-@item.Id">Comentario</label>
                                             </div>
                                         </td>
                                     </tr>
@@ -206,6 +229,53 @@
                     <embed src="" id="fileViewer" class="w-100 d-none" type="application/pdf" style="height: 75vh;">
                     <!-- Contenedor para renderizado local de Office -->
                     <div id="localDocViewer" class="w-100 d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para mostrar tickets por nomenclatura -->
+    <div class="modal fade" id="nomenclaturaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-dark text-white shadow-lg">
+                <div class="modal-header border-primary">
+                    <h5 class="modal-title">Tickets de: <span id="modalNomenclaturaTitle" class="text-info"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover table-bordered mb-0 text-nowrap align-middle">
+                            <thead>
+                                <tr class="text-center">
+                                    <th>Folio</th>
+                                    <th>Cliente</th>
+                                    <th>Tipo</th>
+                                    <th>Nomenclatura</th>
+                                    <th>Descripción</th>
+                                    <th>Factura</th>
+                                    <th>Fecha Compra</th>
+                                    <th>Importe</th>
+                                    <th>Ubicación</th>
+                                    <th>Tipo Activo</th>
+                                    <th>Vida Útil</th>
+                                    <th>Estatus</th>
+                                    <th>Vida Util Pendiente</th>
+                                    <th>Valor Recuperación</th>
+                                    <th>Método</th>
+                                    <th>Fecha Inicio Uso</th>
+                                    <th>Porcentaje Depreciación</th>
+                                    <th>Fecha Ultima Depreciación</th>
+                                    <th>Depreciación Acumulada</th>
+                                    <th>Fecha Baja</th>
+                                    <th>Concepto Baja</th>
+                                    <th>Usuario</th>
+                                    <th>FechaOpe</th>
+                                    <th>HoraOpe</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nomenclaturaTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -325,10 +395,18 @@
                     if (status === 'todos') {
                         row.style.display = '';
                     } else {
-                        const select = row.querySelector('select[name="estatus"]');
-                        row.style.display = (select && select.value === status) ? "" : "none";
+                        const rowStatus = row.querySelector('select[name="estatus"]')?.value || row.dataset.tipo;
+                        row.style.display = (rowStatus === status || (status === 'activo fijo' && row.dataset.tipo === 'activo fijo')) ? "" : "none";
                     }
                 });
+
+                // Mostrar/Ocultar columnas de Activo Fijo según el filtro
+                const afCols = document.querySelectorAll('.AF-col');
+                afCols.forEach(col => {
+                    if (status === 'todos' || status === 'activo fijo') col.classList.remove('d-none');
+                    else col.classList.add('d-none');
+                });
+
                 // Actualizar texto del botón de filtro
                 document.getElementById('filterStatusDropdown').innerHTML = `<i class="bi bi-funnel-fill me-1"></i> ${this.textContent}`;
             });
@@ -346,6 +424,55 @@
                 row.style.display = matches ? "" : "none";
             });
         });
+
+        async function abrirModalNomenclatura(nomenclatura) {
+            if (!nomenclatura) return;
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('nomenclaturaModal'));
+            const tableBody = document.getElementById('nomenclaturaTableBody');
+            document.getElementById('modalNomenclaturaTitle').textContent = nomenclatura;
+            tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4">Cargando...</td></tr>';
+            modal.show();
+            try {
+                const response = await fetch(`@Url.Action("GetTicketsByNomenclatura", "Historial")?nomenclatura=${encodeURIComponent(nomenclatura)}`);
+                const data = await response.json();
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">No se encontró información.</td></tr>';
+                    return;
+                }
+                data.forEach(item => {
+                    tableBody.innerHTML += `
+                        <tr class="text-center">
+                            <td>${item.id > 0 ? 'TICKET-' + String(item.id).padStart(3, '0') : 'N/A'}</td>
+                            <td>${item.nombre || 'N/A'}</td>
+                            <td><span class="badge ${item.tipoSolicitud === 'Hardware' ? 'bg-info' : 'bg-warning text-dark'}">${item.tipoSolicitud}</span></td>
+                            <td>${item.nomenclatura}</td>
+                            <td class="text-wrap text-start" style="max-width: 300px;">${item.descripcion}</td>
+                            <td>${item.factura || 'N/A'}</td>
+                            <td>${item.fechaCompra || 'N/A'}</td>
+                            <td>${item.importeCompra || 'N/A'}</td>
+                            <td>${item.ubicacion || 'N/A'}</td>
+                            <td>${item.tipoActivo || 'N/A'}</td>
+                            <td>${item.vidaUtil || 'N/A'}</td>
+                            <td>${item.estatus || 'N/A'}</td>
+                            <td>${item.vidaUtilPendiente || 'N/A'}</td>
+                            <td>${item.valorRecuperacion || 'N/A'}</td>
+                            <td>${item.metodo || 'N/A'}</td>
+                            <td>${item.fechaInicioUso || 'N/A'}</td>
+                            <td>${item.porcentajeDepreciacion || 'N/A'}</td>
+                            <td>${item.fechaUltimaDepreciacion || 'N/A'}</td>
+                            <td>${item.depreciacionAcumulada || 'N/A'}</td>
+                            <td>${item.fechaBaja || 'N/A'}</td>
+                            <td>${item.conceptoBaja || 'N/A'}</td>
+                            <td>${item.usuarioOpe || 'N/A'}</td>
+                            <td>${item.fechaOpe || 'N/A'}</td>
+                            <td>${item.horaOpe || 'N/A'}</td>
+                        </tr>`;
+                });
+            } catch (e) {
+                tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-danger">Error al cargar datos.</td></tr>';
+            }
+        }
 
         // Función para actualizar los estatus en la tabla sin recargar la página
         async function updateTableStatus() {

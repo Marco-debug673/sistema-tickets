@@ -17,7 +17,7 @@
     <div class="container-fluid py-4">
         <div class="row justify-content-center">
             <div class="col-12 col-md-11 col-lg-10 col-xl-9">
-                <form action="@Url.Action("GuardarSolicitud", "Home")" method="post" enctype="multipart/form-data" class="bg-dark p-5 rounded shadow w-100">
+                <form action="@Url.Action("GuardarSolicitud", "Solicitud")" method="post" enctype="multipart/form-data" class="bg-dark p-5 rounded shadow w-100">
                     <div class="d-flex align-items-center justify-content-center mb-4">
                         <a href="@Url.Action("Logout", "Account")" class="btn btn-outline-danger btn-anim me-3" title="Cerrar Sesión / Volver">
                             <i class="bi bi-box-arrow-right fs-4"></i>
@@ -52,7 +52,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-floating mb-3">
-                                <input type="file" class="form-control" id="fotoServicio" name="fotoServicio" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" placeholder="Adjuntar Archivos" multiple>
+                                <input type="file" class="form-control" id="fotoServicio" name="evidenciaFiles" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" placeholder="Adjuntar Archivos" multiple>
                                 <label for="fotoServicio">Adjuntar Imagen/Evidencia</label>
                             </div>
                         </div>

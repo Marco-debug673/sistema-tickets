@@ -22,28 +22,31 @@ public class SolicitudController : Controller
     }
 
     public IActionResult solicitud_servicio() => CheckAuth("solicitud_servicio");
-
+    
     [HttpPost]
-    public async Task<IActionResult> GuardarSolicitud(OrdenServicio orden, List<IFormFile> fotoServicio)
+    public async Task<IActionResult> GuardarSolicitud(OrdenServicio orden, List<IFormFile> evidenciaFiles)
     {
         string? usuarioSesion = HttpContext.Session.GetString("Usuario");
-        if (string.IsNullOrEmpty(orden.nomenclatura) || string.IsNullOrEmpty(orden.descripcion) || fotoServicio == null || fotoServicio.Count == 0)
+        if (string.IsNullOrEmpty(usuarioSesion)) return RedirectToAction("Index", "Home");
+
+        if (string.IsNullOrWhiteSpace(orden.nomenclatura) || string.IsNullOrWhiteSpace(orden.descripcion) || evidenciaFiles == null || evidenciaFiles.Count == 0)
         {
-            ViewBag.ErrorMessage = "Campos obligatorios faltantes.";
+            ViewBag.ErrorMessage = "Todos los campos son obligatorios, incluyendo la evidencia.";
             ViewBag.Usuario = usuarioSesion;
             return View("~/Views/Home/solicitud_servicio.cshtml", orden);
         }
 
         try
         {
-            orden.nombre_cliente = usuarioSesion ?? "Desconocido";
+            orden.nombre_cliente = usuarioSesion;
             List<string> nombresArchivos = new List<string>();
             string rutaCarpeta = Path.Combine(_env.WebRootPath, "uploads");
             if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);
 
-            foreach (var foto in fotoServicio)
+            foreach (var foto in evidenciaFiles)
             {
-                string nombreUnico = Guid.NewGuid().ToString() + "_" + foto.FileName;
+                string originalFileName = Path.GetFileName(foto.FileName); // Obtener solo el nombre del archivo, sin ruta
+                string nombreUnico = Guid.NewGuid().ToString() + "_" + originalFileName;
                 using (var stream = new FileStream(Path.Combine(rutaCarpeta, nombreUnico), FileMode.Create))
                 {
                     await foto.CopyToAsync(stream);
@@ -69,6 +72,7 @@ public class SolicitudController : Controller
         catch (Exception ex)
         {
             ViewBag.ErrorMessage = "Error: " + ex.Message;
+            ViewBag.Usuario = usuarioSesion;
             return View("~/Views/Home/solicitud_servicio.cshtml", orden);
         }
     }

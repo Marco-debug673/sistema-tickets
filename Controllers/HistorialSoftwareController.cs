@@ -8,12 +8,10 @@ namespace SistemaTickets.Controllers;
 public class HistorialSoftwareController : Controller
 {
     private readonly AppDbContext _context;
-    private readonly RemoteDbContext _contextRemote;
 
-    public HistorialSoftwareController(AppDbContext context, RemoteDbContext contextRemote)
+    public HistorialSoftwareController(AppDbContext context)
     {
         _context = context;
-        _contextRemote = contextRemote;
     }
 
     [HttpGet]
@@ -50,8 +48,7 @@ public class HistorialSoftwareController : Controller
         // Obtener nomenclaturas únicas (Altas, Bajas)
         var nomenAltas = await _context.Altas.Select(a => a.nomenclatura).Distinct().ToListAsync();
         var nomenBajas = await _context.Bajas.Select(b => b.nomenclatura).Distinct().ToListAsync();
-        var nomenActivos = await _contextRemote.CON_ACTIVOS.Select(c => c.CAC_ACTIVO).Distinct().ToListAsync();
-        ViewBag.Nomenclaturas = nomenAltas.Concat(nomenBajas).Concat(nomenActivos).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().OrderBy(n => n).ToList();
+        ViewBag.Nomenclaturas = nomenAltas.Concat(nomenBajas).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().OrderBy(n => n).ToList();
 
         // Obtener puestos únicos (Todas)
         var puestosAltas = await _context.Altas.Select(a => a.puesto).Distinct().ToListAsync();
@@ -64,8 +61,7 @@ public class HistorialSoftwareController : Controller
         // Obtener departamentos únicos (Altas, Bajas)
         var deptosAltas = await _context.Altas.Select(a => a.departamento).Distinct().ToListAsync();
         var deptosBajas = await _context.Bajas.Select(b => b.departamento).Distinct().ToListAsync();
-        var deptosActivos = await _contextRemote.CON_ACTIVOS.Select(c => c.CAC_DEPARTAMENTO).Distinct().ToListAsync();
-        ViewBag.Departamentos = deptosAltas.Concat(deptosBajas).Concat(deptosActivos).Where(d => !string.IsNullOrWhiteSpace(d)).Distinct().OrderBy(d => d).ToList();
+        ViewBag.Departamentos = deptosAltas.Concat(deptosBajas).Where(d => !string.IsNullOrWhiteSpace(d)).Distinct().OrderBy(d => d).ToList();
 
         var softwareItems = await GetSoftwareItemsInternalAsync();
 
@@ -128,38 +124,6 @@ public class HistorialSoftwareController : Controller
             OrigenTabla = "Incadea"
         }).ToListAsync();
         softwareItems.AddRange(inc);
-
-        // 6. Activos Fijos (CON_ACTIVOS) usando SQL Raw para la consulta exacta solicitada
-        var activos = await _contextRemote.CON_ACTIVOS
-            .FromSqlRaw("SELECT CAC_ACTIVO, CAC_FACTURA, CAC_FECHA_COMPRA, CAC_DESCRIPCION, CAC_IMPORTE_COMPRA, CAC_DEPARTAMENTO, CAC_UBICACION, CAC_TIPO, CAC_VIDA_UTIL, CAC_VIDA_UTIL_PENDIENTE, CAC_VALOR_RECUPERACION, CAC_METODO, CAC_FECHA_INICIO_USO, CAC_PORCENTAJE_DEPRECIACION, CAC_FECHA_ULTIMA_DEPRECIACION, CAC_DEPRECIACION_ACUMULADA, CAC_FECHA_BAJA, CAC_CONCEPTO_BAJA, CAC_SITUACION, CAC_CVEUSU, CAC_FECHOPE, CAC_HORAOPE FROM CON_ACTIVOS WHERE CAC_ACTIVO LIKE '%%'")
-            .Select(c => new HistorialSoftwareViewModel {
-                Id = 0,
-                TipoSolicitud = "Activo Fijo",
-                Nomenclatura = c.CAC_ACTIVO,
-                Departamento = c.CAC_DEPARTAMENTO,
-                Descripcion = c.CAC_DESCRIPCION,
-                Estatus = c.CAC_SITUACION,
-                OrigenTabla = "CON_ACTIVOS",
-                Factura = c.CAC_FACTURA,
-                FechaCompra = c.CAC_FECHA_COMPRA != null ? c.CAC_FECHA_COMPRA.ToString() : null,
-                ImporteCompra = c.CAC_IMPORTE_COMPRA != null ? c.CAC_IMPORTE_COMPRA.ToString() : null,
-                Ubicacion = c.CAC_UBICACION,
-                TipoActivo = c.CAC_TIPO,
-                VidaUtil = c.CAC_VIDA_UTIL != null ? c.CAC_VIDA_UTIL.ToString() : null,
-                VidaUtilPendiente = c.CAC_VIDA_UTIL_PENDIENTE != null ? c.CAC_VIDA_UTIL_PENDIENTE.ToString() : null,
-                ValorRecuperacion = c.CAC_VALOR_RECUPERACION != null ? c.CAC_VALOR_RECUPERACION.ToString() : null,
-                Metodo = c.CAC_METODO,
-                FechaInicioUso = c.CAC_FECHA_INICIO_USO != null ? c.CAC_FECHA_INICIO_USO.ToString() : null,
-                PorcentajeDepreciacion = c.CAC_PORCENTAJE_DEPRECIACION != null ? c.CAC_PORCENTAJE_DEPRECIACION.ToString() : null,
-                FechaUltimaDepreciacion = c.CAC_FECHA_ULTIMA_DEPRECIACION != null ? c.CAC_FECHA_ULTIMA_DEPRECIACION.ToString() : null,
-                DepreciacionAcumulada = c.CAC_DEPRECIACION_ACUMULADA != null ? c.CAC_DEPRECIACION_ACUMULADA.ToString() : null,
-                FechaBaja = c.CAC_FECHA_BAJA != null ? c.CAC_FECHA_BAJA.ToString() : null,
-                ConceptoBaja = c.CAC_CONCEPTO_BAJA,
-                UsuarioOpe = c.CAC_CVEUSU,
-                FechaOpe = c.CAC_FECHOPE != null ? c.CAC_FECHOPE.ToString() : null,
-                HoraOpe = c.CAC_HORAOPE
-            }).ToListAsync();
-        softwareItems.AddRange(activos);
 
         return softwareItems;
     }
