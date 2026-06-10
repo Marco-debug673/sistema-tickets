@@ -281,6 +281,28 @@
         </div>
     </div>
 
+    <!-- Modal Anidado para Detalles de Activo Fijo (CON_ACTIVOS) -->
+    <div class="modal fade" id="detalleActivoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-secondary text-white shadow-lg border-info">
+                <div class="modal-header border-info">
+                    <h5 class="modal-title">Datos del Activo: <span id="modalDetalleActivoTitle" class="text-warning"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive" style="max-height: 65vh;">
+                        <table class="table table-sm table-dark table-striped table-hover mb-0 align-middle small">
+                            <thead class="sticky-top bg-dark">
+                                <tr id="detalleActivoTableHeader"></tr>
+                            </thead>
+                            <tbody id="detalleActivoTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Librerías para visualización local (Descargarlas para uso 100% offline) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -446,7 +468,9 @@
                             <td>${item.id > 0 ? 'TICKET-' + String(item.id).padStart(3, '0') : 'N/A'}</td>
                             <td>${item.nombre || 'N/A'}</td>
                             <td><span class="badge ${item.tipoSolicitud === 'Hardware' ? 'bg-info' : 'bg-warning text-dark'}">${item.tipoSolicitud}</span></td>
-                            <td>${item.nomenclatura}</td>
+                            <td ondblclick="abrirDetalleActivoFijo('${item.nomenclatura}')" style="cursor: pointer; color: #0dcaf0;" title="Doble clic para ver datos del activo">
+                                <i class="bi bi-info-circle me-1"></i>${item.nomenclatura}
+                            </td>
                             <td class="text-wrap text-start" style="max-width: 300px;">${item.descripcion}</td>
                             <td>${item.factura || 'N/A'}</td>
                             <td>${item.fechaCompra || 'N/A'}</td>
@@ -471,6 +495,56 @@
                 });
             } catch (e) {
                 tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-danger">Error al cargar datos.</td></tr>';
+            }
+        }
+
+        async function abrirDetalleActivoFijo(nomenclatura) {
+            if (!nomenclatura) return;
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('detalleActivoModal'));
+            const header = document.getElementById('detalleActivoTableHeader');
+            const tableBody = document.getElementById('detalleActivoTableBody');
+            document.getElementById('modalDetalleActivoTitle').textContent = nomenclatura;
+            
+            tableBody.innerHTML = '<tr><td class="text-center py-4">Buscando en CON_ACTIVOS...</td></tr>';
+            header.innerHTML = '';
+            modal.show();
+
+            try {
+                const response = await fetch(`@Url.Action("GetDetallesActivoFijo", "Historial")?nomenclatura=${encodeURIComponent(nomenclatura)}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Error ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                tableBody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tableBody.innerHTML = '<tr><td class="text-center py-4 text-warning">No se encontró ninguna coincidencia para la nomenclatura de"' + nomenclatura + '" en CON_ACTIVOS.</td></tr>';
+                    return;
+                }
+
+                // Obtener nombres de columnas dinámicamente
+                const keys = Object.keys(data[0]);
+                keys.forEach(key => {
+                    // Limpieza de prefijo cac_ de forma insensible a mayúsculas
+                    let cleanKey = key.replace(/^cac_/i, '').toUpperCase();
+                    header.innerHTML += `<th class="px-2 text-info">${cleanKey}</th>`;
+                });
+
+                // Construir filas con todos los campos
+                data.forEach(item => {
+                    let row = '<tr>';
+                    keys.forEach(key => {
+                        let val = item[key];
+                        if (val === null || val === undefined) val = '<span class="text-muted">-</span>';
+                        row += `<td class="px-2 text-nowrap">${val}</td>`;
+                    });
+                    row += '</tr>';
+                    tableBody.innerHTML += row;
+                });
+            } catch (e) {
+                tableBody.innerHTML = '<tr><td class="text-center py-4 text-danger">Error al consultar: ' + e.message + '</td></tr>';
             }
         }
 
