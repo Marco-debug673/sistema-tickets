@@ -46,9 +46,9 @@
     <div class="container-fluid py-4">
         <!-- Botones de cabecera -->
         <div class="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-2">
-            @if (ViewBag.Usuario == "gerencia001")
+            @if (ViewBag.Usuario?.ToLower() == "gerencia001")
             {
-                <a href="@Url.Action("historial_servicio_software", "Historial")" class="btn btn-dark shadow btn-anim" title="Cambiar a Software">
+                <a href="@Url.Action("Index", "HistorialSoftware")" class="btn btn-dark shadow btn-anim" title="Cambiar a Software">
                     <i class="bi bi-laptop fs-4"></i>
                 </a>
             }

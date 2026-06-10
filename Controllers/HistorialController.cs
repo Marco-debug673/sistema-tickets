@@ -41,7 +41,7 @@ public class HistorialController : Controller
             }).ToListAsync();
 
         var combined = hardwareItems
-            .Where(x => usuarioActual == "jefe0018" || x.AsignadoA?.ToLower() == usuarioActual)
+            .Where(x => usuarioActual == "jefe0018" || usuarioActual == "gerencia001" || x.AsignadoA?.ToLower() == usuarioActual)
             .OrderByDescending(x => x.Id)
             .ToList();
 
