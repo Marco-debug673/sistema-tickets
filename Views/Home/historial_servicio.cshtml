@@ -287,6 +287,9 @@
             <div class="modal-content bg-secondary text-white shadow-lg border-info">
                 <div class="modal-header border-info">
                     <h5 class="modal-title">Datos del Activo: <span id="modalDetalleActivoTitle" class="text-warning"></span></h5>
+                    <button type="button" class="btn btn-success btn-sm ms-auto me-2" onclick="exportarActivoFijoExcel()">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+                    </button>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -498,11 +501,14 @@
             }
         }
 
+        let currentActivoFijoData = []; // Almacena los datos para exportación
+
         async function abrirDetalleActivoFijo(nomenclatura) {
             if (!nomenclatura) return;
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('detalleActivoModal'));
             const header = document.getElementById('detalleActivoTableHeader');
             const tableBody = document.getElementById('detalleActivoTableBody');
+            currentActivoFijoData = []; // Resetear datos previos
             document.getElementById('modalDetalleActivoTitle').textContent = nomenclatura;
             
             tableBody.innerHTML = '<tr><td class="text-center py-4">Buscando en CON_ACTIVOS...</td></tr>';
@@ -517,6 +523,7 @@
                 }
                 
                 const data = await response.json();
+                currentActivoFijoData = data; // Guardar datos para exportar
                 
                 tableBody.innerHTML = '';
                 if (!data || data.length === 0) {
@@ -546,6 +553,32 @@
             } catch (e) {
                 tableBody.innerHTML = '<tr><td class="text-center py-4 text-danger">Error al consultar: ' + e.message + '</td></tr>';
             }
+        }
+
+        function exportarActivoFijoExcel() {
+            if (!currentActivoFijoData || currentActivoFijoData.length === 0) {
+                alert("No hay datos para exportar.");
+                return;
+            }
+
+            const nomenclatura = document.getElementById('modalDetalleActivoTitle').textContent;
+            
+            // Limpiar las llaves del objeto (quitar prefijo cac_) para que el Excel se vea limpio
+            const cleanedData = currentActivoFijoData.map(item => {
+                const newItem = {};
+                Object.keys(item).forEach(key => {
+                    const cleanKey = key.replace(/^cac_/i, '').toUpperCase();
+                    newItem[cleanKey] = item[key];
+                });
+                return newItem;
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(cleanedData);
+            worksheet['!autofilter'] = { ref: worksheet['!ref'] }; // Añadir filtro automático
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Detalles Activo");
+            
+            XLSX.writeFile(workbook, `Detalles_Activo_${nomenclatura}.xlsx`);
         }
 
         // Función para actualizar los estatus en la tabla sin recargar la página
