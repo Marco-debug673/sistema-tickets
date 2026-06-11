@@ -17,17 +17,19 @@
     <div class="container-fluid py-4">
         <div class="row justify-content-center">
             <div class="col-12 col-md-11 col-lg-10 col-xl-9">
-                <form action="@Url.Action("GuardarSolicitud", "Solicitud")" method="post" enctype="multipart/form-data" class="bg-dark p-5 rounded shadow w-100">
+                <form id="solicitudForm" action="@Url.Action("GuardarSolicitud", "Solicitud")" method="post" enctype="multipart/form-data" class="bg-dark p-5 rounded shadow w-100">
                     <div class="d-flex align-items-center justify-content-center mb-4">
                         <a href="@Url.Action("Logout", "Account")" class="btn btn-outline-danger btn-anim me-3" title="Cerrar Sesión / Volver">
                             <i class="bi bi-box-arrow-right fs-4"></i>
                         </a>
                         <h2 class="text-primary mb-0">Solicitud de Servicio</h2>
                     </div>
-                    @if (ViewBag.ErrorMessage != null)
-                    {
-                        <div class="alert alert-danger text-center">@ViewBag.ErrorMessage</div>
-                    }
+                    <div id="alertContainer">
+                        @if (ViewBag.ErrorMessage != null)
+                        {
+                            <div class="alert alert-danger text-center">@ViewBag.ErrorMessage</div>
+                        }
+                    </div>
                     <div class="row g-2">
                         <div class="col-md-6">
                             <div class="form-floating">
@@ -37,8 +39,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-floating">
-                                <input type="text" class="form-control" id="nomenclatura" name="nomenclatura" placeholder="Nomenclatura">
+                                <input type="text" class="form-control" id="nomenclatura" name="nomenclatura" placeholder="Nomenclatura" autocomplete="off">
                                 <label for="modeloVehiculo">Nomenclatura</label>
+                                <div id="nomenclaturaFeedback" class="small mt-1 d-none"></div>
                             </div>
                         </div>
                     </div>
@@ -65,5 +68,103 @@
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const nomenclaturaInput = document.getElementById('nomenclatura');
+        const feedback = document.getElementById('nomenclaturaFeedback');
+        let debounceTimer;
+
+        // Validación en tiempo real mientras el usuario escribe
+        nomenclaturaInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const nomenclatura = this.value.trim();
+
+            if (nomenclatura === "") {
+                this.classList.remove('is-valid', 'is-invalid');
+                feedback.classList.add('d-none');
+                return;
+            }
+
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const response = await fetch(`@Url.Action("VerificarNomenclatura", "Historial")?nomenclatura=${encodeURIComponent(nomenclatura)}`);
+                    const result = await response.json();
+
+                    nomenclaturaInput.classList.remove('is-valid', 'is-invalid');
+                    feedback.classList.remove('d-none', 'text-success', 'text-danger');
+
+                    if (result.exists) {
+                        nomenclaturaInput.classList.add('is-valid');
+                        feedback.textContent = '✓ Nomenclatura válida';
+                        feedback.classList.add('text-success');
+                    } else {
+                        nomenclaturaInput.classList.add('is-invalid');
+                        feedback.textContent = '✗ Debe de escribir la nomenclatura completa';
+                        feedback.classList.add('text-danger');
+                    }
+                } catch (error) {
+                    console.error('Error al validar nomenclatura:', error);
+                }
+            }, 500); // Espera 500ms después de que el usuario deje de escribir
+        });
+
+        document.getElementById('solicitudForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const nomenclatura = nomenclaturaInput.value.trim();
+            const saveBtn = document.getElementById('saveBtn');
+            
+            clearTimeout(debounceTimer); // Limpiar cualquier validación en tiempo real pendiente
+
+            if (!nomenclatura) {
+                showAlert('Por favor, escriba la nomenclatura completa.');
+                nomenclaturaInput.classList.add('is-invalid'); // Marcar como inválido si está vacío al enviar
+                return;
+            }
+
+            // Deshabilitar botón mientras se valida para evitar múltiples clics
+            saveBtn.disabled = true;
+            const originalBtnText = saveBtn.innerText;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validando...';
+
+            try {
+                const response = await fetch(`@Url.Action("VerificarNomenclatura", "Historial")?nomenclatura=${encodeURIComponent(nomenclatura)}`);
+                const result = await response.json();
+
+                if (result.exists) {
+                    // Si la nomenclatura existe exactamente, procedemos con el envío
+                    form.submit();
+                } else {
+                    showAlert('Debe de escribir la nomenclatura completa');
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = originalBtnText;
+                    nomenclaturaInput.classList.add('is-invalid'); // Marcar como inválido si no se encuentra al enviar
+                    feedback.textContent = '✗ Debe de escribir la nomenclatura completa';
+                    feedback.classList.remove('d-none');
+                    feedback.classList.add('text-danger');
+                }
+            } catch (error) {
+                console.error('Error al validar nomenclatura:', error);
+                showAlert('Error de conexión al validar la nomenclatura.');
+                saveBtn.disabled = false; // Re-habilitar botón en caso de error
+                saveBtn.innerText = originalBtnText; // Restaurar texto del botón
+                nomenclaturaInput.classList.add('is-invalid'); // Marcar como inválido en caso de error de conexión
+                feedback.textContent = 'Error de conexión al validar la nomenclatura.';
+                feedback.classList.remove('d-none');
+                feedback.classList.add('text-danger');
+            }
+        });
+
+        function showAlert(message) {
+            const container = document.getElementById('alertContainer');
+            container.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`;
+        }
+    </script>
 </body>
 </html>

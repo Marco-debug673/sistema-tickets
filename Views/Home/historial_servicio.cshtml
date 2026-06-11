@@ -252,25 +252,7 @@
                                     <th>Tipo</th>
                                     <th>Nomenclatura</th>
                                     <th>Descripción</th>
-                                    <th>Factura</th>
-                                    <th>Fecha Compra</th>
-                                    <th>Importe</th>
-                                    <th>Ubicación</th>
-                                    <th>Tipo Activo</th>
-                                    <th>Vida Útil</th>
                                     <th>Estatus</th>
-                                    <th>Vida Util Pendiente</th>
-                                    <th>Valor Recuperación</th>
-                                    <th>Método</th>
-                                    <th>Fecha Inicio Uso</th>
-                                    <th>Porcentaje Depreciación</th>
-                                    <th>Fecha Ultima Depreciación</th>
-                                    <th>Depreciación Acumulada</th>
-                                    <th>Fecha Baja</th>
-                                    <th>Concepto Baja</th>
-                                    <th>Usuario</th>
-                                    <th>FechaOpe</th>
-                                    <th>HoraOpe</th>
                                 </tr>
                             </thead>
                             <tbody id="nomenclaturaTableBody"></tbody>
@@ -462,7 +444,7 @@
                 const data = await response.json();
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">No se encontró información.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No se encontraron tickets anteriores para esta nomenclatura.</td></tr>';
                     return;
                 }
                 data.forEach(item => {
@@ -471,33 +453,15 @@
                             <td>${item.id > 0 ? 'TICKET-' + String(item.id).padStart(3, '0') : 'N/A'}</td>
                             <td>${item.nombre || 'N/A'}</td>
                             <td><span class="badge ${item.tipoSolicitud === 'Hardware' ? 'bg-info' : 'bg-warning text-dark'}">${item.tipoSolicitud}</span></td>
-                            <td ondblclick="abrirDetalleActivoFijo('${item.nomenclatura}')" style="cursor: pointer; color: #0dcaf0;" title="Doble clic para ver datos del activo">
+                            <td ondblclick="abrirDetalleActivoFijo('${item.nomenclatura}')" style="cursor: pointer; color: #ffc107;" title="Doble clic para ver ficha técnica del Activo Fijo">
                                 <i class="bi bi-info-circle me-1"></i>${item.nomenclatura}
                             </td>
                             <td class="text-wrap text-start" style="max-width: 300px;">${item.descripcion}</td>
-                            <td>${item.factura || 'N/A'}</td>
-                            <td>${item.fechaCompra || 'N/A'}</td>
-                            <td>${item.importeCompra || 'N/A'}</td>
-                            <td>${item.ubicacion || 'N/A'}</td>
-                            <td>${item.tipoActivo || 'N/A'}</td>
-                            <td>${item.vidaUtil || 'N/A'}</td>
-                            <td>${item.estatus || 'N/A'}</td>
-                            <td>${item.vidaUtilPendiente || 'N/A'}</td>
-                            <td>${item.valorRecuperacion || 'N/A'}</td>
-                            <td>${item.metodo || 'N/A'}</td>
-                            <td>${item.fechaInicioUso || 'N/A'}</td>
-                            <td>${item.porcentajeDepreciacion || 'N/A'}</td>
-                            <td>${item.fechaUltimaDepreciacion || 'N/A'}</td>
-                            <td>${item.depreciacionAcumulada || 'N/A'}</td>
-                            <td>${item.fechaBaja || 'N/A'}</td>
-                            <td>${item.conceptoBaja || 'N/A'}</td>
-                            <td>${item.usuarioOpe || 'N/A'}</td>
-                            <td>${item.fechaOpe || 'N/A'}</td>
-                            <td>${item.horaOpe || 'N/A'}</td>
+                            <td><span class="badge bg-secondary">${item.estatus || 'nuevo'}</span></td>
                         </tr>`;
                 });
             } catch (e) {
-                tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-danger">Error al cargar datos.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Error al cargar el historial de tickets.</td></tr>';
             }
         }
 
