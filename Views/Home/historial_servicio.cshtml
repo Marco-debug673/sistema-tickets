@@ -157,18 +157,20 @@
                                         </td>
                                         <td class="text-wrap" style="max-width: 300px;">@item.Descripcion</td>
                                         <td class="text-center">
-                                            @if (!string.IsNullOrEmpty(item.Evidencia))
+                                            @{ var evidencia = item.Evidencia; }
+                                            @if (!string.IsNullOrWhiteSpace(evidencia))
                                             {
                                                 <div class="d-flex flex-wrap justify-content-center gap-1" style="min-width: 100px;">
-                                                    @foreach (var foto in item.Evidencia!.Split(','))
+                                                    @foreach (var foto in evidencia.Split(',', StringSplitOptions.RemoveEmptyEntries))
                                                     {
-                                                        var ext = (System.IO.Path.GetExtension(foto) ?? "").ToLower();
+                                                        var trimmedFoto = foto.Trim();
+                                                        var ext = (System.IO.Path.GetExtension(trimmedFoto) ?? "").ToLower();
                                                         if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
                                                         {
-                                                            <img src="~/uploads/@foto" alt="Evidencia" 
+                                                            <img src="~/uploads/@trimmedFoto" alt="Evidencia" 
                                                                  style="width: 45px; height: 45px; object-fit: cover;" 
                                                                  class="rounded shadow-sm img-clickable" 
-                                                                 onclick="openViewer('@Url.Content("~/uploads/" + foto)', 'image')">
+                                                                 onclick="openViewer('@Url.Content("~/uploads/" + trimmedFoto)', 'image')">
                                                         }
                                                         else
                                                         {
@@ -176,7 +178,7 @@
                                                                           ext.Contains("doc") ? "bi-file-earmark-word text-primary" :
                                                                           ext.Contains("xls") ? "bi-file-earmark-excel text-success" :
                                                                           ext.Contains("ppt") ? "bi-file-earmark-ppt text-warning" : "bi-file-earmark") file-icon"
-                                                               onclick="openViewer('@Url.Content("~/uploads/" + foto)', 'file')"></i>
+                                                               onclick="openViewer('@Url.Content("~/uploads/" + trimmedFoto)', 'file')"></i>
                                                         }
                                                     }
                                                 </div>

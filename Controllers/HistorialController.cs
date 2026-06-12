@@ -25,8 +25,10 @@ public class HistorialController : Controller
 
         string usuarioActual = usuarioSesion.ToLower();
     
-        var hardwareItems = await _context.OrdenesServicios
-            .Select(o => new HistorialSoftwareViewModel
+        var hardwareItemsQuery = from o in _context.OrdenesServicios
+                                 join d in _context.DetalleOrdenServicios on o.id_orden equals d.id_orden into orderDetails
+                                 from latestDetail in orderDetails.OrderByDescending(d => d.id_detalle).Take(1).DefaultIfEmpty()
+                                 select new HistorialSoftwareViewModel
             {
                 Id = o.id_orden,
                 TipoSolicitud = "Hardware",
@@ -35,10 +37,11 @@ public class HistorialController : Controller
                 Descripcion = o.descripcion,
                 Evidencia = o.evidencia,
                 OrigenTabla = "OrdenesServicios",
-                Estatus = _context.DetalleOrdenServicios.Where(d => d.id_orden == o.id_orden).OrderByDescending(d => d.id_detalle).Select(d => d.estatus).FirstOrDefault() ?? "nuevo",
-                AsignadoA = _context.DetalleOrdenServicios.Where(d => d.id_orden == o.id_orden).OrderByDescending(d => d.id_detalle).Select(d => d.asignado_a).FirstOrDefault() ?? "",
-                Comentarios = _context.DetalleOrdenServicios.Where(d => d.id_orden == o.id_orden).OrderByDescending(d => d.id_detalle).Select(d => d.comentarios).FirstOrDefault() ?? ""
-            }).ToListAsync();
+                Estatus = latestDetail != null ? latestDetail.estatus : "nuevo",
+                AsignadoA = latestDetail != null ? latestDetail.asignado_a : "",
+                Comentarios = latestDetail != null ? latestDetail.comentarios : ""
+            };
+        var hardwareItems = await hardwareItemsQuery.ToListAsync();
 
         var combined = hardwareItems
             .Where(x => usuarioActual == "jefe0018" || usuarioActual == "gerencia001" || x.AsignadoA?.ToLower() == usuarioActual)
@@ -92,28 +95,22 @@ public class HistorialController : Controller
     }
 
     [HttpGet]
-    public IActionResult GetHistorialStatus()
+    public async Task<IActionResult> GetHistorialStatus()
     {
         string? usuarioSesion = HttpContext.Session.GetString("Usuario");
         if (string.IsNullOrEmpty(usuarioSesion)) return Unauthorized();
         string usuarioActual = usuarioSesion.ToLower();
 
-        var updatesList = _context.OrdenesServicios
-            .Select(o => new
-            {
-                idOrden = o.id_orden,
-                estatus = _context.DetalleOrdenServicios
-                    .Where(d => d.id_orden == o.id_orden)
-                    .OrderByDescending(d => d.id_detalle)
-                    .Select(d => d.estatus)
-                    .FirstOrDefault() ?? "nuevo",
-                asignadoA = _context.DetalleOrdenServicios
-                    .Where(d => d.id_orden == o.id_orden)
-                    .OrderByDescending(d => d.id_detalle)
-                    .Select(d => d.asignado_a)
-                    .FirstOrDefault()
-            })
-            .ToList();
+        var updatesListQuery = from o in _context.OrdenesServicios
+                               join d in _context.DetalleOrdenServicios on o.id_orden equals d.id_orden into orderDetails
+                               from latestDetail in orderDetails.OrderByDescending(d => d.id_detalle).Take(1).DefaultIfEmpty()
+                               select new
+                               {
+                                   idOrden = o.id_orden,
+                                   estatus = latestDetail != null ? latestDetail.estatus : "nuevo",
+                                   asignadoA = latestDetail != null ? latestDetail.asignado_a : ""
+                               };
+        var updatesList = await updatesListQuery.ToListAsync();
 
         var updates = updatesList
             .Where(u => usuarioActual == "jefe0018" || u.asignadoA?.ToLower() == usuarioActual)

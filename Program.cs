@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaTickets.Data;
 using System.IO;
+using SistemaTickets.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,9 @@ if (!string.IsNullOrWhiteSpace(connectionRemote))
     builder.Services.AddDbContext<RemoteDbContext>(options =>
         options.UseSqlServer(connectionRemote));
 }
+
+// Registrar el servicio de automatización de tickets
+builder.Services.AddHostedService<TicketAutomationService>();
 
 var app = builder.Build();
 
