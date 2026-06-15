@@ -148,7 +148,7 @@
                                         "cerrado" => "table-success",
                                         _ => ""
                                     };
-                                    <tr data-id-orden="@item.Id" data-tipo="@item.TipoSolicitud.ToLower()" class="@rowClass">
+                                    <tr data-id-orden="@item.Id" data-tipo="@(item.TipoSolicitud?.ToLower() ?? "")" class="@rowClass">
                                         <td>@(item.TipoSolicitud == "Hardware" ? "TICKET-" + item.Id.ToString("D3") : "N/A")</td>
                                         <td>@item.Nombre</td>
                                         <td><span class="badge @(item.TipoSolicitud == "Hardware" ? "bg-dark" : "bg-warning text-dark")">@item.TipoSolicitud</span></td>
