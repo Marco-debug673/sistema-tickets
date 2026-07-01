@@ -69,7 +69,10 @@
                     <i class="bi bi-pc-display fs-4"></i>
                 </a>
             }
-            <a href="@Url.Action("Dashboard_software", "Dashboard")" class="btn btn-primary shadow btn-anim" title="Panel">
+            <button class="btn btn-warning shadow btn-anim fw-bold d-flex align-items-center gap-2" type="submit" id="saveBtn">
+                <i class="bi bi-check-circle-fill fs-4"></i> Guardar
+            </button>
+            <a href="@Url.Action("Index", "DashboardSoftware")" class="btn btn-primary shadow btn-anim" title="Panel">
                 <i class="bi bi-grid-fill fs-4"></i>
             </a>
             <a href="@Url.Action("Logout", "Account")" class="btn btn-danger shadow btn-anim" title="Cerrar Sesión">
@@ -224,14 +227,29 @@
                                     <th scope="col">Celular</th>
                                     <th scope="col">Descripción</th>
                                     <th scope="col">Evidencia</th>
+                                    <th scope="col">Estatus</th>
+                                    <th scope="col">Atendido por</th>
+                                    <th scope="col">Comentarios</th>
                                 </tr>
                             </thead>
                             <tbody id="table-services" class="text-center">
                                 @foreach (var item in Model)
                                 {
-                                    <tr data-id-orden="@item.Id" data-tipo="@(item.TipoSolicitud?.ToLower() ?? "")" data-area="@(item.Area?.ToLower() ?? "")">
+                                    var rowClass = item.Estatus switch
+                                    {
+                                        "nuevo" => "table-primary",
+                                        "proceso" => "table-secondary",
+                                        "cerrado" => "table-success",
+                                        _ => ""
+                                    };
+                                    <tr data-id-orden="@item.Id" data-tipo="@(item.TipoSolicitud?.ToLower() ?? "")" data-area="@(item.Area?.ToLower() ?? "")" data-origen="@item.OrigenTabla" class="@rowClass">
                                         <td>@item.Id</td>
-                                        <td>@item.TipoSolicitud @(string.IsNullOrEmpty(item.Area) ? "" : "- " + item.Area)</td>
+                                        <td style="cursor: pointer;" 
+                                            class="fw-bold text-primary"
+                                            onclick="showTicketDetails(@item.Id, '@item.OrigenTabla')"
+                                            title="Haz clic para ver todos los detalles">
+                                            @item.TipoSolicitud @(string.IsNullOrEmpty(item.Area) ? "" : "- " + item.Area)
+                                        </td>
                                         <td>@item.Nombre</td>
                                         <td>@item.Contacto</td>
                                         <td>@item.Nomenclatura</td>
@@ -269,6 +287,31 @@
                                                 </div>
                                             }
                                         </td>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="estatus" title="Seleccionar estatus del servicio">
+                                                <option value="" selected disabled>Seleccione una opción</option>
+                                                <option value="nuevo" selected="@(item.Estatus == "nuevo")">Nuevo</option>
+                                                <option value="proceso" selected="@(item.Estatus == "proceso")">En proceso</option>
+                                                <option value="cerrado" selected="@(item.Estatus == "cerrado")">Cerrado</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="asignado_a" title="Asignar técnico" @(ViewBag.Usuario?.ToLower() != "jefe0017" ? "disabled" : "")>
+                                                <option value="">Sin asignar</option>
+                                                <option value="jefe0017" selected="@(item.AsignadoA == "jefe0017")">Jefe 0017</option>
+                                                <option value="asistente0013" selected="@(item.AsignadoA == "asistente0013")">Asistente 0013</option>
+                                                <option value="asistente0014" selected="@(item.AsignadoA == "asistente0014")">Asistente 0014</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <div class="form-floating">
+                                                <textarea class="form-control" placeholder="Escriba un comentario"
+                                                          id="comentario-@item.Id-@item.OrigenTabla"
+                                                          name="comentarios"
+                                                          style="height: 60px; min-width: 200px;">@item.Comentarios</textarea>
+                                                <label for="comentario-@item.Id-@item.OrigenTabla">Comentario</label>
+                                            </div>
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
@@ -294,6 +337,24 @@
                     <embed src="" id="fileViewer" class="w-100 d-none" type="application/pdf" style="height: 75vh;">
                     <!-- Contenedor para renderizado local de Office -->
                     <div id="localDocViewer" class="w-100 d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Detalles de Ticket -->
+    <div class="modal fade" id="ticketDetailModal" tabindex="-1" aria-labelledby="ticketDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border-primary shadow-lg">
+                <div class="modal-header border-primary">
+                    <h5 class="modal-title" id="ticketDetailModalLabel">Detalles del Ticket</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="ticketDetailBody">
+                    <!-- El contenido se inyectará aquí -->
+                </div>
+                <div class="modal-footer border-primary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -334,6 +395,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+
         async function openViewer(url, type) {
             const img = document.getElementById('fullImage');
             const embed = document.getElementById('fileViewer');
@@ -386,6 +448,100 @@
                 }
             }
         }
+
+        async function showTicketDetails(id, origen) {
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('ticketDetailModal'));
+            const modalBody = document.getElementById('ticketDetailBody');
+            const modalTitle = document.getElementById('ticketDetailModalLabel');
+
+            modalTitle.textContent = `Detalles del Ticket #${id}`;
+            modalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+            modal.show();
+
+            try {
+                const response = await fetch(`@Url.Action("GetTicketDetails", "HistorialSoftware")?id=${id}&origen=${origen}`);
+                if (!response.ok) throw new Error('No se pudo cargar la información del ticket.');
+                
+                const { ticket, history } = await response.json();
+
+                let detailsHtml = '<div class="row g-3">';
+
+                const fields = [
+                    { label: 'Folio', value: ticket.id },
+                    { label: 'Tipo Solicitud', value: `${ticket.tipoSolicitud} ${ticket.area ? '- ' + ticket.area : ''}` },
+                    { label: 'Nombre', value: ticket.nombre },
+                    { label: 'Contacto', value: ticket.contacto },
+                    { label: 'Nomenclatura', value: ticket.nomenclatura },
+                    { label: 'Empresa', value: ticket.empresa },
+                    { label: 'Sucursal', value: ticket.sucursal },
+                    { label: 'Puesto', value: ticket.puesto },
+                    { label: 'Departamento', value: ticket.departamento },
+                    { label: 'Teléfono', value: ticket.telefono },
+                    { label: 'Extensión', value: ticket.extension },
+                    { label: 'Celular', value: ticket.celular },
+                    { label: 'Descripción', value: ticket.descripcion, full: true },
+                    { label: 'Estatus Actual', value: `<span class="badge bg-info">${ticket.estatus}</span>` },
+                    { label: 'Asignado A', value: ticket.asignadoA || 'Sin Asignar' },
+                    { label: 'Último Comentario', value: ticket.comentarios, full: true },
+                ];
+
+                fields.forEach(field => {
+                    if (field.value) {
+                        detailsHtml += `
+                            <div class="${field.full ? 'col-12' : 'col-md-6'}">
+                                <div class="bg-dark p-2 rounded border border-secondary">
+                                    <strong class="text-primary">${field.label}:</strong>
+                                    <div class="text-light ps-2">${field.value}</div>
+                                </div>
+                            </div>`;
+                    }
+                });
+
+                detailsHtml += '</div>';
+
+                if (history && history.length > 0) {
+                    detailsHtml += '<h5 class="mt-4 pt-3 border-top border-secondary text-primary">Historial de Cambios</h5>';
+                    detailsHtml += '<ul class="list-group list-group-flush">';
+                    history.forEach(h => {
+                        const fecha = new Date(h.fechaRegistro).toLocaleString('es-MX');
+                        detailsHtml += `
+                            <li class="list-group-item bg-transparent text-white border-secondary px-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <strong class="mb-1">Estatus: ${h.estatus}</strong>
+                                    <small>${fecha}</small>
+                                </div>
+                                <p class="mb-1 small">Asignado a: <strong>${h.asignadoA || 'N/A'}</strong></p>
+                                ${h.comentarios ? `<p class="mb-0 small text-muted">Comentario: ${h.comentarios}</p>` : ''}
+                            </li>`;
+                    });
+                    detailsHtml += '</ul>';
+                }
+
+                modalBody.innerHTML = detailsHtml;
+
+            } catch (error) {
+                modalBody.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            }
+        }
+
+        // Lógica de cambio de color de fila según el estatus seleccionado
+        function updateRowColor(selectElement) {
+            const row = selectElement.closest('tr');
+            const status = selectElement.value;
+            const classes = ['table-primary', 'table-secondary', 'table-success'];
+            row.classList.remove(...classes);
+
+            const statusClasses = {
+                'nuevo': 'table-primary',
+                'proceso': 'table-secondary',
+                'cerrado': 'table-success'
+            };
+
+            if (statusClasses[status]) {
+                row.classList.add(statusClasses[status]);
+            }
+        }
+
 
         function displayBootstrapAlert(message, type) {
             const container = document.getElementById('historialMessageContainer');
@@ -739,10 +895,170 @@
             });
         });
 
+        document.getElementById('saveBtn').addEventListener('click', async function (event) {
+            event.preventDefault();
+
+            const updatedItems = [];
+            const rows = document.querySelectorAll('#table-services tr');
+
+            rows.forEach(row => {
+                if (row.style.display === "none") return;
+
+                const idOrden = row.dataset.idOrden;
+                const origenTabla = row.dataset.origen;
+                const estatusSelect = row.querySelector('select[name="estatus"]');
+                const asignadoSelect = row.querySelector('select[name="asignado_a"]');
+                const comentariosTextarea = row.querySelector('textarea[name="comentarios"]');
+
+                if (idOrden && origenTabla && estatusSelect && asignadoSelect && comentariosTextarea) {
+                    updatedItems.push({
+                        IdOrden: parseInt(idOrden),
+                        OrigenTabla: origenTabla,
+                        Estatus: estatusSelect.value,
+                        AsignadoA: asignadoSelect.value,
+                        Comentarios: comentariosTextarea.value
+                    });
+                }
+            });
+
+            if (updatedItems.length === 0) {
+                displayBootstrapAlert('No hay elementos visibles para guardar.', 'info');
+                return;
+            }
+
+            try {
+                const url = '@Url.Action("GuardarCambiosHistorialSoftware", "HistorialSoftware")';
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedItems)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error en la respuesta del servidor:', errorText);
+                    throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                displayBootstrapAlert(result.message, result.success ? 'success' : 'danger');
+            } catch (error) {
+                displayBootstrapAlert('Error al conectar con el servidor: ' + error.message, 'danger');
+            }
+        });
+
+        async function abrirModalNomenclatura(nomenclatura) {
+            if (!nomenclatura) return;
+
+            const modalElement = document.getElementById('nomenclaturaModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            const tableBody = document.getElementById('nomenclaturaTableBody');
+            document.getElementById('modalNomenclaturaTitle').textContent = nomenclatura;
+
+            tableBody.innerHTML = '<tr><td colspan="32" class="text-center py-4">Consultando base de datos...</td></tr>';
+            modal.show();
+
+            try {
+                const url = `@Url.Action("GetTicketsByNomenclatura", "HistorialSoftware")?nomenclatura=${encodeURIComponent(nomenclatura)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="32" class="text-center py-4 text-muted">No se encontraron tickets para esta nomenclatura.</td></tr>';
+                    return;
+                }
+
+                data.forEach(item => {
+                    // Replicar lógica de visualización de evidencia (imágenes e iconos)
+                    let evidenciaHtml = '';
+                    if (item.evidencia) {
+                        evidenciaHtml = '<div class="d-flex flex-wrap justify-content-center gap-1" style="min-width: 100px;">';
+                        item.evidencia.split(',').forEach(foto => {
+                            const ext = foto.split('.').pop().toLowerCase();
+                            const urlBase = '@Url.Content("~/uploads/")' + foto;
+                            if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+                                evidenciaHtml += `<img src="${urlBase}" alt="Evidencia" 
+                                                     style="width: 45px; height: 45px; object-fit: cover;" 
+                                                     class="rounded shadow-sm img-clickable" 
+                                                     onclick="openViewer('${urlBase}', 'image')">`;
+                            } else {
+                                let iconClass = 'bi-file-earmark';
+                                if (ext === 'pdf') iconClass = 'bi-file-earmark-pdf text-danger';
+                                else if (ext.includes('doc')) iconClass = 'bi-file-earmark-word text-primary';
+                                else if (ext.includes('xls')) iconClass = 'bi-file-earmark-excel text-success';
+                                else if (ext.includes('ppt')) iconClass = 'bi-file-earmark-ppt text-warning';
+                                
+                                evidenciaHtml += `<i class="bi ${iconClass} file-icon" onclick="openViewer('${urlBase}', 'file')"></i>`;
+                            }
+                        });
+                        evidenciaHtml += '</div>';
+                    }
+
+                    tableBody.innerHTML += `
+                        <tr class="text-center align-middle border-secondary">
+                            <td>${item.id}</td>
+                            <td><span class="badge bg-primary px-3">${item.tipoSolicitud} ${item.area ? '- ' + item.area : ''}</span></td>
+                            <td>${item.nombre || 'N/A'}</td>
+                            <td>${item.contacto || 'N/A'}</td>
+                            <td>${item.nomenclatura || 'N/A'}</td>
+                            <td>${item.empresa || 'N/A'}</td>
+                            <td>${item.sucursal || 'N/A'}</td>
+                            <td>${item.puesto || 'N/A'}</td>
+                            <td>${item.departamento || 'N/A'}</td>
+                            <td>${item.telefono || 'N/A'}</td>
+                            <td>${item.extension || ''}</td>
+                            <td>${item.celular || 'N/A'}</td>
+                            <td class="text-start text-wrap" style="max-width: 400px;">${item.descripcion}</td>
+                            <td>${evidenciaHtml}</td>
+                        </tr>`;
+                });
+            } catch (error) {
+                tableBody.innerHTML = '<tr><td colspan="32" class="text-center py-4 text-danger">Hubo un problema al cargar los datos. Intente de nuevo.</td></tr>';
+            }
+        }
+
+        async function updateTableStatus() {
+            try {
+                const response = await fetch('@Url.Action("GetHistorialStatusSoftware", "HistorialSoftware")');
+                if (!response.ok) return;
+
+                const updates = await response.json();
+                updates.forEach(update => {
+                    const row = document.querySelector(`tr[data-id-orden="${update.idOrden}"][data-origen="${update.origenTabla}"]`);
+                    if (row) {
+                        // Actualizar Estatus
+                        const estatusSelect = row.querySelector('select[name="estatus"]');
+                        if (estatusSelect && estatusSelect.value !== update.estatus && document.activeElement !== estatusSelect) {
+                            estatusSelect.value = update.estatus;
+                            updateRowColor(estatusSelect);
+                        }
+
+                        // Actualizar Asignación
+                        const asignadoSelect = row.querySelector('select[name="asignado_a"]');
+                        if (asignadoSelect && asignadoSelect.value !== update.asignadoA && document.activeElement !== asignadoSelect) {
+                            asignadoSelect.value = update.asignadoA || "";
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error al actualizar estatus automáticamente:", error);
+            }
+        }
+
         // Configura el intervalo para verificar actualizaciones cada 60 segundos
         document.addEventListener('DOMContentLoaded', () => {
             // Ocultar columna vacía por defecto al iniciar
             updateColumnVisibility('todos');
+
+            document.querySelectorAll('select[name="estatus"]').forEach(select => {
+                select.addEventListener('change', function () { updateRowColor(this); });
+            });
+
+            // Iniciar la actualización en tiempo real
+            setInterval(updateTableStatus, 60000);
         });
     </script>
 </body>

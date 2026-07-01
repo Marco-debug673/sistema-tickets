@@ -19,6 +19,7 @@
             <div class="col-12 col-md-11 col-lg-10 col-xl-9">
                 <form id="solicitudForm" action="@Url.Action("GuardarSolicitud", "Solicitud")" method="post" enctype="multipart/form-data" class="bg-dark p-5 rounded shadow w-100">
                     <div class="d-flex align-items-center justify-content-center mb-4">
+                        <input type="hidden" name="numero_serie" id="numero_serie_hidden">
                         <a href="@Url.Action("Logout", "Account")" class="btn btn-outline-danger btn-anim me-3" title="Cerrar Sesión / Volver">
                             <i class="bi bi-box-arrow-right fs-4"></i>
                         </a>
@@ -62,9 +63,40 @@
                     </div>
                     <br>
                     <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-3">
-                        <button class="btn btn-warning btn-anim flex-fill" type="submit" id="saveBtn" >Guardar</button>
+                        <button class="btn btn-warning btn-anim flex-fill" type="button" id="saveBtn" >Guardar</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Número de Serie -->
+    <div class="modal fade" id="serieModal" tabindex="-1" aria-labelledby="serieModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-primary" id="serieModalLabel">Agregar Número de Serie</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="confirmMessage">
+                        <p>¿Desea agregar el número de serie del equipo?</p>
+                    </div>
+                    <div id="serieInputContainer" class="form-floating d-none">
+                        <input type="text" class="form-control" id="numero_serie_input" placeholder="Número de Serie">
+                        <label for="numero_serie_input">Número de Serie</label>
+                        <div class="invalid-feedback">
+                            Por favor, ingresa el número de serie.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <div id="initialButtons">
+                        <button type="button" class="btn btn-outline-secondary" id="noBtn">No</button>
+                        <button type="button" class="btn btn-primary" id="siBtn">Sí</button>
+                    </div>
+                    <button type="button" class="btn btn-success d-none" id="finalSaveBtn">Guardar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -109,10 +141,11 @@
             }, 500); // Espera 500ms después de que el usuario deje de escribir
         });
 
-        document.getElementById('solicitudForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // Lógica del botón principal de Guardar
+        document.getElementById('saveBtn').addEventListener('click', async function(e) {
+            e.preventDefault(); // Prevenimos el envío del formulario
             
-            const form = this;
+            const form = document.getElementById('solicitudForm');
             const nomenclatura = nomenclaturaInput.value.trim();
             const saveBtn = document.getElementById('saveBtn');
             
@@ -135,7 +168,10 @@
 
                 if (result.exists) {
                     // Si la nomenclatura existe exactamente, procedemos con el envío
-                    form.submit();
+                    const serieModal = new bootstrap.Modal(document.getElementById('serieModal'));
+                    serieModal.show();
+                    saveBtn.disabled = false; // Habilitamos el botón de nuevo
+                    saveBtn.innerText = originalBtnText;
                 } else {
                     showAlert('Debe de escribir la nomenclatura completa');
                     saveBtn.disabled = false;
@@ -155,6 +191,57 @@
                 feedback.classList.remove('d-none');
                 feedback.classList.add('text-danger');
             }
+        });
+
+        // Lógica del Modal de Número de Serie
+        const serieModalEl = document.getElementById('serieModal');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const serieInputContainer = document.getElementById('serieInputContainer');
+        const initialButtons = document.getElementById('initialButtons');
+        const finalSaveBtn = document.getElementById('finalSaveBtn');
+        const form = document.getElementById('solicitudForm');
+
+        // Botón "Sí"
+        document.getElementById('siBtn').addEventListener('click', function() {
+            confirmMessage.classList.add('d-none');
+            initialButtons.classList.add('d-none');
+            serieInputContainer.classList.remove('d-none');
+            finalSaveBtn.classList.remove('d-none');
+        });
+
+        // Botón "No"
+        document.getElementById('noBtn').addEventListener('click', function() {
+            document.getElementById('numero_serie_hidden').value = ''; // Aseguramos que no se envíe nada
+            const saveBtn = document.getElementById('saveBtn');
+            const originalBtnText = 'Guardar'; // O el texto original que tenías
+            saveBtn.disabled = false;
+            saveBtn.innerText = originalBtnText;
+            form.submit();
+        });
+
+        // Botón "Guardar Todo" (después de decir que sí)
+        document.getElementById('finalSaveBtn').addEventListener('click', function() {
+            const numeroSerieInput = document.getElementById('numero_serie_input');
+            const numeroSerie = numeroSerieInput.value.trim();
+
+            if (numeroSerie === '') {
+                numeroSerieInput.classList.add('is-invalid');
+            } else {
+                numeroSerieInput.classList.remove('is-invalid');
+                document.getElementById('numero_serie_hidden').value = numeroSerie;
+                form.submit();
+            }
+        });
+
+        // Resetear el modal cuando se cierra
+        serieModalEl.addEventListener('hidden.bs.modal', function () {
+            const numeroSerieInput = document.getElementById('numero_serie_input');
+            confirmMessage.classList.remove('d-none');
+            initialButtons.classList.remove('d-none');
+            serieInputContainer.classList.add('d-none');
+            finalSaveBtn.classList.add('d-none');
+            numeroSerieInput.value = '';
+            numeroSerieInput.classList.remove('is-invalid'); // Limpiar validación
         });
 
         function showAlert(message) {

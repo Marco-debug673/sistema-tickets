@@ -13,6 +13,7 @@ namespace SistemaTickets.Data
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<OrdenServicio> OrdenesServicios { get; set; }
         public DbSet<DetalleOrdenServicio> DetalleOrdenServicios { get; set; }
+        public DbSet<DetalleSoftwareServicio> DetalleSoftwareServicios { get; set; }
         public DbSet<Altas> Altas { get; set; }
         public DbSet<Bajas> Bajas { get; set; }
         public DbSet<BusinessPro> BusinessPro { get; set; }

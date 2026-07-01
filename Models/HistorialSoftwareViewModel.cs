@@ -23,6 +23,7 @@ public class HistorialSoftwareViewModel
     public string? Estatus { get; set; }
     public string? OrigenTabla { get; set; }
 
+    public string? NumeroSerie { get; set; }
     // Propiedades para Hardware y Activo Fijo
     public string? AsignadoA { get; set; }
     public string? Comentarios { get; set; }

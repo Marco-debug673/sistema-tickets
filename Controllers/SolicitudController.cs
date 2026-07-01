@@ -39,6 +39,12 @@ public class SolicitudController : Controller
         try
         {
             orden.nombre_cliente = usuarioSesion;
+
+            // Si el número de serie es nulo (el usuario eligió "No"), asigna una cadena vacía.
+            if (orden.numero_serie == null) {
+                orden.numero_serie = "";
+            }
+
             List<string> nombresArchivos = new List<string>();
             string rutaCarpeta = Path.Combine(_env.WebRootPath, "uploads");
             if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);

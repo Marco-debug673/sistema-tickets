@@ -13,6 +13,7 @@ namespace SistemaTickets.Models
         public string? nomenclatura { get; set; }
         public string? descripcion { get; set; }
         public string? evidencia { get; set; }
+        public string? numero_serie { get; set; }
     }
 
     public class Detalle {

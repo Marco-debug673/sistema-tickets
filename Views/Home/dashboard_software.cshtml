@@ -1,6 +1,19 @@
 @{
     Layout = null;
     int total = ViewBag.Total ?? 0;
+    var rawCurrentUser = ViewBag.Usuario as string ?? "";
+    var currentUser = rawCurrentUser.ToLower();
+    // Estos usuarios solo verán el dashboard, sin acceso al menú lateral de solicitudes.
+    var isRestrictedUser = currentUser == "jefe0017" || currentUser == "asistente0013" || currentUser == "asistente0014";
+
+    // Nueva lógica para usuarios de Gerencia. Solo ven el menú para crear tickets.
+    var isGerenciaUser = false;
+    if (rawCurrentUser.StartsWith("Gerencia ", StringComparison.OrdinalIgnoreCase))
+    {
+        var numberPart = rawCurrentUser.Substring(9);
+        if (int.TryParse(numberPart, out int gNum) && gNum >= 1 && gNum <= 10)
+        { isGerenciaUser = true; }
+    }
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -29,19 +42,32 @@
         .nav-sublink-custom:hover { background-color: #343a40; color: #fff; }
         .collapse-arrow { transition: transform 0.3s ease; }
         .nav-link-custom[aria-expanded="true"] .collapse-arrow { transform: rotate(180deg); }
+
+        /* Estilos para visualizador de evidencia */
+        .img-clickable { cursor: zoom-in; transition: transform 0.2s ease-in-out; }
+        .file-icon { font-size: 2rem; cursor: pointer; transition: transform 0.2s; }
+        .file-icon:hover, .img-clickable:hover { transform: scale(1.2); }
+        #fullImage, #fileViewer, #localDocViewer { height: 75vh; object-fit: contain; overflow: auto; }
+        #localDocViewer { background-color: white; color: black; text-align: left; padding: 20px; }
     </style>
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
         <div class="container-fluid container">
-            <button class="btn btn-outline-light btn-sm me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
-                <i class="bi bi-list fs-4"></i>
-            </button>
+            @if (!isRestrictedUser) // Todos excepto los restringidos ven el botón del menú
+            {
+                <button class="btn btn-outline-light btn-sm me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+            }
             <span class="navbar-brand mb-0 h1"><i class="bi bi-grid-fill me-2"></i> Dashboard</span>
             <div class="d-flex gap-2">
-                <a href="@Url.Action("Index", "HistorialSoftware")" class="btn btn-outline-light btn-sm btn-anim rounded-pill px-3">
-                    <i class="bi bi-clock-history me-1"></i> Servicios de Software
-                </a>
+                @if (!isGerenciaUser) // Los usuarios de Gerencia no ven el historial
+                {
+                    <a href="@Url.Action("Index", "HistorialSoftware")" class="btn btn-outline-light btn-sm btn-anim rounded-pill px-3">
+                        <i class="bi bi-clock-history me-1"></i> Servicios de Software
+                    </a>
+                }
                 <a href="@Url.Action("Logout", "Account")" class="btn btn-danger btn-sm btn-anim rounded-pill px-3">
                     <i class="bi bi-box-arrow-right"></i> Salir
                 </a>
@@ -49,87 +75,93 @@
         </div>
     </nav>
 
-    <!-- Menú Lateral (Offcanvas) -->
-    <div class="offcanvas offcanvas-start bg-dark text-white shadow" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
-        <div class="offcanvas-header border-bottom border-secondary">
-            <h5 class="offcanvas-title fw-bold text-primary" id="sidebarMenuLabel">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body p-3">
-            <div class="d-flex flex-column h-100">
-                <a class="nav-link-custom" data-bs-toggle="collapse" href="#collapseAltas" role="button" aria-expanded="false" aria-controls="collapseAltas">
-                    <i class="bi bi-person-up"></i> Altas/Bajas
-                    <i class="bi bi-chevron-down ms-auto collapse-arrow small"></i>
-                </a>
-                <div class="collapse" id="collapseAltas">
-                    <a href="@Url.Action("solicitud_altas", "Altas")" class="nav-sublink-custom">Altas</a>
-                    <a href="@Url.Action("solicitud_bajas", "Bajas")" class="nav-sublink-custom">Bajas</a>
-                </div>
-                <a class="nav-link-custom" data-bs-toggle="collapse" href="#collapseBusiness" role="button" aria-expanded="false" aria-controls="collapseBusiness">
-                    <i class="bi bi-briefcase"></i> Business Pro
-                    <i class="bi bi-chevron-down ms-auto collapse-arrow small"></i>
-                </a>
-                <div class="collapse" id="collapseBusiness">
-                    <a href="@Url.Action("solicitud_bp_ventas", "BP_Ventas")" class="nav-sublink-custom">Ventas</a>
-                    <a href="@Url.Action("solicitud_bp_servicio", "BP_Servicio")" class="nav-sublink-custom">Servicio</a>
-                    <a href="@Url.Action("solicitud_bp_refacciones", "BP_Refacciones")" class="nav-sublink-custom">Refacciones</a>
-                </div>
-                <a href="@Url.Action("solicitud_interfaces", "Interfaces")" class="nav-link-custom">
-                    <i class="bi bi-plus-circle"></i> Interfaces
-                </a>
-                <a class="nav-link-custom" data-bs-toggle="collapse" href="#collapseIncadea" role="button" aria-expanded="false" aria-controls="collapseIncadea">
-                    <i class="bi bi-cpu"></i> Incadea
-                    <i class="bi bi-chevron-down ms-auto collapse-arrow small"></i>
-                </a>
-                <div class="collapse" id="collapseIncadea">
-                    <a href="@Url.Action("solicitud_incadea_ventas", "Inc_Ventas")" class="nav-sublink-custom">Ventas</a>
-                    <a href="@Url.Action("solicitud_incadea_servicio", "Inc_Servicio")" class="nav-sublink-custom">Servicio</a>
-                    <a href="@Url.Action("solicitud_incadea_refacciones", "Inc_Refacciones")" class="nav-sublink-custom">Refacciones</a>
+    @if (!isRestrictedUser) // Los usuarios restringidos no ven el menú
+    {
+        <!-- Menú Lateral (Offcanvas) -->
+        <div class="offcanvas offcanvas-start bg-dark text-white shadow" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+            <div class="offcanvas-header border-bottom border-secondary">
+                <h5 class="offcanvas-title fw-bold text-primary" id="sidebarMenuLabel">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-3">
+                <div class="d-flex flex-column h-100">
+                    <a class="nav-link-custom" data-bs-toggle="collapse" href="#collapseAltas" role="button" aria-expanded="false" aria-controls="collapseAltas">
+                        <i class="bi bi-person-up"></i> Altas/Bajas
+                        <i class="bi bi-chevron-down ms-auto collapse-arrow small"></i>
+                    </a>
+                    <div class="collapse" id="collapseAltas">
+                        <a href="@Url.Action("solicitud_altas", "Altas")" class="nav-sublink-custom">Altas</a>
+                        <a href="@Url.Action("solicitud_bajas", "Bajas")" class="nav-sublink-custom">Bajas</a>
+                    </div>
+                    <a class="nav-link-custom" data-bs-toggle="collapse" href="#collapseBusiness" role="button" aria-expanded="false" aria-controls="collapseBusiness">
+                        <i class="bi bi-briefcase"></i> Business Pro
+                        <i class="bi bi-chevron-down ms-auto collapse-arrow small"></i>
+                    </a>
+                    <div class="collapse" id="collapseBusiness">
+                        <a href="@Url.Action("solicitud_bp_ventas", "BP_Ventas")" class="nav-sublink-custom">Ventas</a>
+                        <a href="@Url.Action("solicitud_bp_servicio", "BP_Servicio")" class="nav-sublink-custom">Servicio</a>
+                        <a href="@Url.Action("solicitud_bp_refacciones", "BP_Refacciones")" class="nav-sublink-custom">Refacciones</a>
+                    </div>
+                    <a href="@Url.Action("solicitud_interfaces", "Interfaces")" class="nav-link-custom">
+                        <i class="bi bi-plus-circle"></i> Interfaces
+                    </a>
+                    <a class="nav-link-custom" data-bs-toggle="collapse" href="#collapseIncadea" role="button" aria-expanded="false" aria-controls="collapseIncadea">
+                        <i class="bi bi-cpu"></i> Incadea
+                        <i class="bi bi-chevron-down ms-auto collapse-arrow small"></i>
+                    </a>
+                    <div class="collapse" id="collapseIncadea">
+                        <a href="@Url.Action("solicitud_incadea_ventas", "Inc_Ventas")" class="nav-sublink-custom">Ventas</a>
+                        <a href="@Url.Action("solicitud_incadea_servicio", "Inc_Servicio")" class="nav-sublink-custom">Servicio</a>
+                        <a href="@Url.Action("solicitud_incadea_refacciones", "Inc_Refacciones")" class="nav-sublink-custom">Refacciones</a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 
-    <div class="container">
-        <div class="row mb-5 text-center">
-            <div class="col-12">
-                <div class="badge bg-primary fs-5 px-4 py-2 rounded-pill shadow-sm">
-                    Total: @total Tickets
+    @if (!isGerenciaUser) // Los usuarios de Gerencia no ven el contenido del dashboard
+    {
+        <div class="container">
+            <div class="row mb-5 text-center">
+                <div class="col-12">
+                    <div class="badge bg-primary fs-5 px-4 py-2 rounded-pill shadow-sm">
+                        Total: @total Tickets
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row g-4 justify-content-center">
-            @{
-                var statuses = new[] { 
-                    new { Id = "nuevo", Label = "Nuevos", Color = "#0d6efd", Value = (int)ViewBag.Nuevo },
-                    new { Id = "proceso", Label = "En Proceso", Color = "#6c757d", Value = (int)ViewBag.Proceso },
-                    new { Id = "cerrado", Label = "Cerrados", Color = "#198754", Value = (int)ViewBag.Cerrado }
-                };
-            }
+            <div class="row g-4 justify-content-center">
+                @{
+                    var statuses = new[] {
+                        new { Id = "nuevo", Label = "Nuevos", Color = "#0d6efd", Value = (int)ViewBag.Nuevo },
+                        new { Id = "proceso", Label = "En Proceso", Color = "#6c757d", Value = (int)ViewBag.Proceso },
+                        new { Id = "cerrado", Label = "Cerrados", Color = "#198754", Value = (int)ViewBag.Cerrado }
+                    };
+                }
 
-            @foreach (var s in statuses)
-            {
-                var percentage = total > 0 ? (s.Value * 100.0 / total).ToString("F1") : "0";
-                <div class="col-sm-6 col-md-4 col-lg">
-                    <div class="card h-100 shadow-sm border-0 card-stat">
-                        <div class="card-body text-center p-4">
-                            <h6 class="text-uppercase text-muted mb-3 fw-bold small">@s.Label</h6>
-                            <div class="chart-container mb-3">
-                                <canvas id="chart-@s.Id"></canvas>
-                            </div>
-                            <div class="mt-2">
-                                <span class="h3 fw-bold mb-0">@s.Value</span>
-                                <p class="text-muted small mb-0">@percentage% del total</p>
+                @foreach (var s in statuses)
+                {
+                    var percentage = total > 0 ? (s.Value * 100.0 / total).ToString("F1") : "0";
+                    <div class="col-sm-6 col-md-4 col-lg" onclick="showTicketsByStatus('@s.Id')" style="cursor: pointer;">
+                        <div class="card h-100 shadow-sm border-0 card-stat" title="Haz clic para ver los tickets de estado '@s.Label'">
+                            <div class="card-body text-center p-4">
+                                <h6 class="text-uppercase text-muted mb-3 fw-bold small">@s.Label</h6>
+                                <div class="chart-container mb-3">
+                                    <canvas id="chart-@s.Id"></canvas>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="h3 fw-bold mb-0">@s.Value</span>
+                                    <p class="text-muted small mb-0">@percentage% del total</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            }
+                }
+            </div>
         </div>
-    </div>
+    }
     <!-- Modal para mostrar tickets por estatus -->
     <div class="modal fade" id="ticketsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -141,14 +173,24 @@
                 <div class="modal-body p-0">
                     <div class="table-responsive">
                         <table class="table table-dark table-hover mb-0">
-                            <thead class="table-dark border-secondary">
-                                <tr class="text-center">
-                                    <th>Folio</th>
-                                    <th>Cliente</th>
-                                    <th>Nomenclatura</th>
-                                    <th>Descripción</th>
-                                    <th id="commentsHeader">Solución</th>
-                                </tr>
+                        <thead class="table-dark border-secondary sticky-top">
+                            <tr class="text-center align-middle">
+                                <th>Folio</th>
+                                <th>Área</th>
+                                <th>Nombre/Contacto</th>
+                                <th>Nomenclatura</th>
+                                <th>Empresa</th>
+                                <th>Sucursal</th>
+                                <th>Puesto</th>
+                                <th>Departamento</th>
+                                <th>Teléfono</th>
+                                <th>Extensión</th>
+                                <th>Celular</th>
+                                <th>Descripción</th>
+                                <th>Evidencia</th>
+                                <th>Asignado a</th>
+                                <th id="commentsHeader">Comentarios</th>
+                            </tr>
                             </thead>
                             <tbody id="ticketsListBody"></tbody>
                         </table>
@@ -158,7 +200,29 @@
         </div>
     </div>
 
+    <!-- Modal para ver Evidencia -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white" id="imageModalLabel">Evidencia del Servicio</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <img src="" id="fullImage" class="img-fluid rounded-bottom w-100 d-none" alt="Vista Previa">
+                    <embed src="" id="fileViewer" class="w-100 d-none" type="application/pdf">
+                    <div id="localDocViewer" class="w-100 d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librerías para visualización local -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
+        const charts = {}; // Global object to store chart instances
+
         function initChart(id, val, total, color) {
             const ctx = document.getElementById('chart-' + id)?.getContext('2d');
             const rest = Math.max(0, total - val);
@@ -184,23 +248,12 @@
                     },
                     responsive: true,
                     maintainAspectRatio: false,
-                    onClick: (evt, activeElements) => {
-                        // Solo reacciona si se hace clic en el segmento de color (index 0)
-                        if (activeElements.length > 0 && activeElements[0].index === 0) {
-                            showTicketsByStatus(id);
-                        }
-                    },
-                    onHover: (event, activeElements) => {
-                        // Cambia el cursor a pointer cuando pasa sobre el segmento de color
-                        event.native.target.style.cursor = activeElements.length > 0 && activeElements[0].index === 0 ? 'pointer' : 'default';
-                    }
+                    events: [] // Deshabilitamos todos los eventos del gráfico, ya que la tarjeta es el disparador
                 }
             });
             charts[id] = chartInstance; // Store the chart instance
             return chartInstance;
         }
-
-        const charts = {}; // Global object to store chart instances
 
         async function showTicketsByStatus(status) {
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('ticketsModal'));
@@ -209,7 +262,7 @@
             const commentsHeader = document.getElementById('commentsHeader');
             
             const isCerrado = (status === 'cerrado');
-            const colCount = isCerrado ? 5 : 4;
+            const colCount = 15;
 
             if (isCerrado) {
                 commentsHeader.classList.remove('d-none');
@@ -224,23 +277,54 @@
             modal.show();
 
             try {
-                const response = await fetch(`@Url.Action("GetTicketsByStatus", "Dashboard")?status=${status}`);
+                const response = await fetch(`@Url.Action("GetTicketsByStatus", "DashboardSoftware")?status=${status}`);
                 const data = await response.json();
                 
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-4 text-muted">No hay tickets con este estatus.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-5 text-muted">No hay tickets con este estatus.</td></tr>`;
                 } else {
                     data.forEach(t => {
+                        let evidenciaHtml = '<td class="text-center align-middle">-</td>';
+                        if (t.evidencia) {
+                            let filesHtml = '';
+                            t.evidencia.split(',').forEach(foto => {
+                                const ext = (foto.split('.').pop() || '').toLowerCase();
+                                const url = `@Url.Content("~/uploads/")` + foto;
+                                if (['.jpg', '.jpeg', '.png', '.gif'].includes('.' + ext)) {
+                                    filesHtml += `<img src="${url}" alt="Evidencia" style="width: 40px; height: 40px; object-fit: cover;" class="rounded shadow-sm img-clickable m-1" onclick="openViewer('${url}', 'image')">`;
+                                } else {
+                                    let iconClass = 'bi-file-earmark';
+                                    if (ext === 'pdf') iconClass = 'bi-file-earmark-pdf text-danger';
+                                    else if (ext.includes('doc')) iconClass = 'bi-file-earmark-word text-primary';
+                                    else if (ext.includes('xls')) iconClass = 'bi-file-earmark-excel text-success';
+                                    else if (ext.includes('ppt')) iconClass = 'bi-file-earmark-ppt text-warning';
+                                    filesHtml += `<i class="bi ${iconClass} file-icon m-1" onclick="openViewer('${url}', 'file')"></i>`;
+                                }
+                            });
+                            evidenciaHtml = `<td class="text-center align-middle"><div class="d-flex flex-wrap justify-content-center gap-1" style="min-width: 100px;">${filesHtml}</div></td>`;
+                        }
+
                         let rowHtml = `
-                            <tr class="text-center align-middle">
-                                <td class="fw-bold text-primary">TICKET-${String(t.idOrden).padStart(3, '0')}</td>
-                                <td>${t.cliente}</td>
-                                <td>${t.nomenclatura}</td>
-                                <td class="text-wrap text-start" style="max-width: 300px;">${t.descripcion}</td>`;
+                            <tr class="text-center align-middle small">
+                                <td class="fw-bold text-primary">${t.id}</td>
+                                <td>${t.tipoSolicitud} ${t.area ? '- ' + t.area : ''}</td>
+                                <td>${t.nombre || t.contacto || '-'}</td>
+                                <td>${t.nomenclatura || '-'}</td>
+                                <td>${t.empresa || '-'}</td>
+                                <td>${t.sucursal || '-'}</td>
+                                <td>${t.puesto || '-'}</td>
+                                <td>${t.departamento || '-'}</td>
+                                <td>${t.telefono || '-'}</td>
+                                <td>${t.extension || '-'}</td>
+                                <td>${t.celular || '-'}</td>
+                                <td class="text-wrap text-start" style="min-width: 250px;">${t.descripcion || '-'}</td>
+                                ${evidenciaHtml}
+                                <td>${t.asignadoA || 'Sin Asignar'}</td>
+                        `;
                         
                         if (isCerrado) {
-                            rowHtml += `<td class="text-wrap text-start" style="max-width: 300px;">${t.comentarios || ''}</td>`;
+                            rowHtml += `<td class="text-wrap text-start" style="min-width: 200px;">${t.comentarios || '-'}</td>`;
                         }
                         
                         rowHtml += `</tr>`;
@@ -248,13 +332,58 @@
                     });
                 }
             } catch (error) {
-                tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-4 text-danger">Error al cargar los datos.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center py-5 text-danger">Error al cargar los datos.</td></tr>`;
+            }
+        }
+
+        async function openViewer(url, type) {
+            const img = document.getElementById('fullImage');
+            const embed = document.getElementById('fileViewer');
+            const localViewer = document.getElementById('localDocViewer');
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('imageModal'));
+
+            img.classList.add('d-none');
+            embed.classList.add('d-none');
+            localViewer.classList.add('d-none');
+            localViewer.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+
+            modal.show();
+
+            if (type === 'image') {
+                img.src = url;
+                img.classList.remove('d-none');
+            } else {
+                const ext = url.split('.').pop().toLowerCase();
+                if (ext === 'pdf') {
+                    embed.src = url;
+                    embed.classList.remove('d-none');
+                } else {
+                    localViewer.classList.remove('d-none');
+                    try {
+                        const response = await fetch(url);
+                        const arrayBuffer = await response.arrayBuffer();
+
+                        if (ext === 'docx') {
+                            const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+                            localViewer.innerHTML = result.value;
+                        } else if (ext === 'xlsx' || ext === 'xls') {
+                            const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            localViewer.innerHTML = `<div class="table-responsive">${XLSX.utils.sheet_to_html(worksheet)}</div>`;
+                        } else {
+                            localViewer.innerHTML = `<div class="p-5 text-center"><p>La visualización de este tipo de archivo no es soportada.</p><a href="${url}" class="btn btn-primary" download>Descargar Archivo</a></div>`;
+                        }
+                    } catch (error) {
+                        localViewer.innerHTML = `<div class="alert alert-danger">Error al cargar el documento: ${error.message}</div>`;
+                    }
+                }
             }
         }
 
         async function updateDashboardData() {
             try {
-                const response = await fetch('@Url.Action("GetDashboardData", "Dashboard")');
+                const response = await fetch('@Url.Action("GetDashboardData", "DashboardSoftware")');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }

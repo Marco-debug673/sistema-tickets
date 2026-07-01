@@ -35,6 +35,7 @@ public class HistorialController : Controller
                 Nombre = o.nombre_cliente,
                 Nomenclatura = o.nomenclatura,
                 Descripcion = o.descripcion,
+                NumeroSerie = o.numero_serie,
                 Evidencia = o.evidencia,
                 OrigenTabla = "OrdenesServicios",
                 Estatus = latestDetail != null ? latestDetail.estatus : "nuevo",
@@ -58,9 +59,25 @@ public class HistorialController : Controller
         nomenclatura = nomenclatura.Trim();
         
         var hardware = await _context.OrdenesServicios.Where(o => o.nomenclatura == nomenclatura).Select(o => new HistorialSoftwareViewModel {
-            Id = o.id_orden, TipoSolicitud = "Hardware", Nombre = o.nombre_cliente, Nomenclatura = o.nomenclatura, Descripcion = o.descripcion, Evidencia = o.evidencia,
+            Id = o.id_orden, TipoSolicitud = "Hardware", Nombre = o.nombre_cliente, Nomenclatura = o.nomenclatura, Descripcion = o.descripcion, Evidencia = o.evidencia, NumeroSerie = o.numero_serie,
             Estatus = _context.DetalleOrdenServicios.Where(d => d.id_orden == o.id_orden).OrderByDescending(d => d.id_detalle).Select(d => d.estatus).FirstOrDefault() ?? "nuevo"
         }).ToListAsync();
+
+        return Json(hardware);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetTicketsByNumeroSerie(string numeroSerie)
+    {
+        if (string.IsNullOrWhiteSpace(numeroSerie)) return Json(new List<HistorialSoftwareViewModel>());
+        numeroSerie = numeroSerie.Trim();
+
+        var hardware = await _context.OrdenesServicios
+            .Where(o => o.numero_serie == numeroSerie)
+            .Select(o => new HistorialSoftwareViewModel {
+                Id = o.id_orden, TipoSolicitud = "Hardware", Nombre = o.nombre_cliente, Nomenclatura = o.nomenclatura, Descripcion = o.descripcion, Evidencia = o.evidencia, NumeroSerie = o.numero_serie,
+                Estatus = _context.DetalleOrdenServicios.Where(d => d.id_orden == o.id_orden).OrderByDescending(d => d.id_detalle).Select(d => d.estatus).FirstOrDefault() ?? "nuevo"
+            }).ToListAsync();
 
         return Json(hardware);
     }
