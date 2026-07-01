@@ -263,7 +263,7 @@ public class HistorialSoftwareController : Controller
             // Seguridad: Solo el jefe puede cambiar la asignación
             string? finalAsignado = (usuarioActual == "jefe0017") ? item.AsignadoA : ultimoDetalle?.AsignadoA;
 
-            // Lógica automática: Si se agrega un comentario y el estatus es 'proceso', cambiarlo a 'cerrarlo'.
+            // Lógica automática: Si se agrega un comentario y el estatus es 'proceso', cambiarlo a 'cerrado'.
             if (!string.IsNullOrWhiteSpace(item.Comentarios) && item.Estatus == "proceso")
             {
                 item.Estatus = "cerrado";
