@@ -30,7 +30,9 @@ public class BP_VentasController : Controller
         string? usuarioSesion = HttpContext.Session.GetString("Usuario");
 
         if (string.IsNullOrEmpty(usuarioSesion))
+        {
             return RedirectToAction("Index", "Home");
+        }
 
         // Validación de campos obligatorios
         if (

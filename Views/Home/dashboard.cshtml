@@ -55,8 +55,8 @@
             @foreach (var s in statuses)
             {
                 var percentage = total > 0 ? (s.Value * 100.0 / total).ToString("F1") : "0";
-                <div class="col-sm-6 col-md-4 col-lg">
-                    <div class="card h-100 shadow-sm border-0 card-stat">
+                <div class="col-sm-6 col-md-4 col-lg" onclick="showTicketsByStatus('@s.Id')" style="cursor: pointer;">
+                    <div class="card h-100 shadow-sm border-0 card-stat" title="Haz clic para ver los tickets de estado '@s.Label'">
                         <div class="card-body text-center p-4">
                             <h6 class="text-uppercase text-muted mb-3 fw-bold small">@s.Label</h6>
                             <div class="chart-container mb-3">
@@ -129,16 +129,7 @@
                     },
                     responsive: true,
                     maintainAspectRatio: false,
-                    onClick: (evt, activeElements) => {
-                        // Solo reacciona si se hace clic en el segmento de color (index 0)
-                        if (activeElements.length > 0 && activeElements[0].index === 0) {
-                            showTicketsByStatus(id);
-                        }
-                    },
-                    onHover: (event, activeElements) => {
-                        // Cambia el cursor a pointer cuando pasa sobre el segmento de color
-                        event.native.target.style.cursor = activeElements.length > 0 && activeElements[0].index === 0 ? 'pointer' : 'default';
-                    }
+                    events: [] // Deshabilitamos todos los eventos del gráfico, ya que la tarjeta es el disparador
                 }
             });
             charts[id] = chartInstance; // Store the chart instance
