@@ -8,11 +8,18 @@
 
     // Nueva lógica para usuarios de Gerencia. Solo ven el menú para crear tickets.
     var isGerenciaUser = false;
-    if (rawCurrentUser.StartsWith("Gerencia ", StringComparison.OrdinalIgnoreCase))
+    if (!string.IsNullOrEmpty(rawCurrentUser))
     {
-        var numberPart = rawCurrentUser.Substring(9);
-        if (int.TryParse(numberPart, out int gNum) && gNum >= 1 && gNum <= 10)
-        { isGerenciaUser = true; }
+        string[] gerenciaLikePrefixes = { "gerencia", "analista", "auxiliar", "supervisor", "asistente" };
+        var lowerCurrentUser = rawCurrentUser.ToLower();
+        foreach (var prefix in gerenciaLikePrefixes)
+        {
+            if (lowerCurrentUser.StartsWith(prefix) && int.TryParse(rawCurrentUser.AsSpan(prefix.Length), out _))
+            {
+                isGerenciaUser = true;
+                break;
+            }
+        }
     }
 }
 <!DOCTYPE html>
@@ -62,7 +69,7 @@
             }
             <span class="navbar-brand mb-0 h1"><i class="bi bi-grid-fill me-2"></i> Dashboard</span>
             <div class="d-flex gap-2">
-                @if (!isGerenciaUser) // Los usuarios de Gerencia no ven el historial
+                @if (!isGerenciaUser && !isRestrictedUser) // Los usuarios de Gerencia y los restringidos no ven el historial
                 {
                     <a href="@Url.Action("Index", "HistorialSoftware")" class="btn btn-outline-light btn-sm btn-anim rounded-pill px-3">
                         <i class="bi bi-clock-history me-1"></i> Servicios de Software
@@ -75,7 +82,7 @@
         </div>
     </nav>
 
-    @if (!isRestrictedUser) // Los usuarios restringidos no ven el menú
+    @if (!isRestrictedUser || isGerenciaUser) // Los usuarios de Gerencia sí ven el menú
     {
         <!-- Menú Lateral (Offcanvas) -->
         <div class="offcanvas offcanvas-start bg-dark text-white shadow" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">

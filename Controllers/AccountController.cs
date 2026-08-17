@@ -30,8 +30,14 @@ public class AccountController : Controller
         bool esValido = false;
         if (usuario != null && !string.IsNullOrEmpty(usuario.contrasena))
             esValido = (password.Trim() == usuario.contrasena.Trim());
+
         if (esValido)
         {
+            // Redirección específica para el usuario "Sistema 01" después de la validación
+            if (usuario!.nombre_usuario?.Trim().Equals("Sistema 01", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return RedirectToAction("Index", "CrearCuentas");
+            }
             HttpContext.Session.SetString("Usuario", usuario!.nombre_usuario ?? string.Empty);
             string? uname = usuario.nombre_usuario?.ToLower();
             string? uOriginal = usuario.nombre_usuario;
@@ -48,21 +54,22 @@ public class AccountController : Controller
             if (uname is "asistente0014" or "asistente0013" or "jefe0017")
                 return RedirectToAction("Dashboard_software", "Dashboard");
 
-            if (uOriginal != null && uOriginal.StartsWith("Gerencia ", StringComparison.OrdinalIgnoreCase))
+            // Lógica para usuarios tipo "Gerencia" (gerencia, analista, etc.)
+            if (uOriginal != null)
             {
-                var numberPart = uOriginal.Substring(9);
-                if (int.TryParse(numberPart, out int gNum) && gNum is >= 1 and <= 10)
+                string[] gerenciaLikePrefixes = { "gerencia", "analista", "auxiliar", "supervisor", "asistente" };
+                var lowerUOriginal = uOriginal.ToLower();
+                foreach (var prefix in gerenciaLikePrefixes)
                 {
-                    TempData["ShowServiceSelection"] = true;
-                    return RedirectToAction("Index", "Home");
-                }
-            }
-            else if (uOriginal != null && uOriginal.StartsWith("Sistema ", StringComparison.OrdinalIgnoreCase))
-            {
-                var numberPart = uOriginal.Substring(8);
-                if (int.TryParse(numberPart, out int sNum) && sNum is >= 1 and <= 5)
-                {
-                    return RedirectToAction("historial_servicio", "Historial");
+                    if (lowerUOriginal.StartsWith(prefix))
+                    {
+                        var numberPart = uOriginal.Substring(prefix.Length);
+                        if (int.TryParse(numberPart, out _))
+                        {
+                            TempData["ShowServiceSelection"] = true;
+                            return RedirectToAction("Index", "Home");
+                        }
+                    }
                 }
             }
 
