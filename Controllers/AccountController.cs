@@ -28,15 +28,8 @@ public class AccountController : Controller
         var usuario = _context.Usuarios.FirstOrDefault(u => u.nombre_usuario != null && u.nombre_usuario.Trim() == cleanUsername);
 
         bool esValido = false;
-        try
-        {
-            if (usuario != null && !string.IsNullOrEmpty(usuario.contrasena))
-            {
-                esValido = BCrypt.Net.BCrypt.Verify(password.Trim(), usuario.contrasena.Trim());
-            }
-        }
-        catch { esValido = false; }
-
+        if (usuario != null && !string.IsNullOrEmpty(usuario.contrasena))
+            esValido = (password.Trim() == usuario.contrasena.Trim());
         if (esValido)
         {
             HttpContext.Session.SetString("Usuario", usuario!.nombre_usuario ?? string.Empty);
@@ -85,31 +78,5 @@ public class AccountController : Controller
     {
         HttpContext.Session.Clear();
         return RedirectToAction("Index", "Home");
-    }
-
-    [HttpGet]
-    public IActionResult GenerarHash(string password)
-    {
-        if (!_env.IsDevelopment() || string.IsNullOrEmpty(password)) return NotFound();
-        return Content($"Hash generado: {BCrypt.Net.BCrypt.HashPassword(password)}");
-    }
-
-    [HttpGet]
-    public IActionResult MigrarContrasenas()
-    {
-        if (!_env.IsDevelopment()) return NotFound();
-
-        var usuarios = _context.Usuarios.ToList();
-        int actualizados = 0;
-        foreach (var u in usuarios)
-        {
-            if (!string.IsNullOrEmpty(u.contrasena) && !u.contrasena.StartsWith("$2"))
-            {
-                u.contrasena = BCrypt.Net.BCrypt.HashPassword(u.contrasena);
-                actualizados++;
-            }
-        }
-        _context.SaveChanges();
-        return Content($"Éxito: Se han hasheado {actualizados} contraseñas.");
     }
 }
